@@ -5,7 +5,7 @@
  * @var string $content
  * @var string|null $title
  */
-$appName = (string) config('app.name');
+$appName = setting('app_name');
 $pageTitle = isset($title) && $title !== '' ? $title . ' · ' . $appName : $appName;
 ?>
 <!doctype html>
@@ -17,6 +17,7 @@ $pageTitle = isset($title) && $title !== '' ? $title . ' · ' . $appName : $appN
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap.min.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap-icons.min.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
+    <link rel="stylesheet" href="<?= e(url('/branding/theme', ['v' => substr(md5(setting('primary_color')), 0, 8)])) ?>">
 </head>
 <body class="print-body">
 <div class="print-toolbar d-print-none">

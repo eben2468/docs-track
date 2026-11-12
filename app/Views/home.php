@@ -1,18 +1,18 @@
 <?php
 /**
- * Temporary Phase 0 page: shows that layout, routing, config and DB are wired up.
+ * Temporary home page until the dashboards are built: greeting plus a system check.
  *
  * @var array<string, array{0: bool, 1: string}> $checks
  */
+$user = auth();
 ?>
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <div>
-        <h1 class="h4 mb-1">Foundation check</h1>
-        <p class="text-body-secondary mb-0">The application skeleton is running.</p>
-    </div>
+<div class="mb-4">
+    <h1 class="h4 mb-1">Welcome, <?= e($user['full_name'] ?? '') ?></h1>
+    <p class="text-body-secondary mb-0">Document registration, tracking and dashboards will appear here in upcoming releases.</p>
 </div>
 
 <div class="card shadow-sm">
+    <div class="card-header bg-body"><h2 class="h6 mb-0">System check</h2></div>
     <div class="list-group list-group-flush">
         <?php foreach ($checks as $label => [$ok, $detail]): ?>
             <div class="list-group-item d-flex align-items-center gap-3 py-3">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Services\ServiceException;
 use Core\Request;
 use Core\Response;
 use Core\ValidationException;
@@ -45,6 +46,37 @@ abstract class Controller
         }
 
         return $validator->validated();
+    }
+
+    /**
+     * Redirect back after a business-rule failure: the message is shown under its form
+     * field when it has one, otherwise as a flash; submitted input is kept.
+     */
+    protected function failed(Request $request, ServiceException $e, string $fallback = '/'): Response
+    {
+        $response = $this->back($request, $fallback)->withInput($request->all());
+
+        return $e->field() !== ''
+            ? $response->withErrors([$e->field() => [$e->getMessage()]])->with('danger', 'Please correct the highlighted fields and try again.')
+            : $response->with('danger', $e->getMessage());
+    }
+
+    /**
+     * Current page number from ?page= (minimum 1).
+     */
+    protected function page(Request $request): int
+    {
+        return max(1, (int) $request->query('page', 1));
+    }
+
+    /**
+     * A trimmed string from the query string ('' when absent or not a string).
+     */
+    protected function queryString(Request $request, string $key): string
+    {
+        $value = $request->query($key, '');
+
+        return is_string($value) ? trim($value) : '';
     }
 
     /**

@@ -18,7 +18,10 @@ use InvalidArgumentException;
  *
  * Rules: required, nullable, string, numeric, integer, email, date, confirmed,
  * min:n, max:n, in:a,b, unique:table,column[,ignoreId[,idColumn]], exists:table,column,
- * file, mimes:pdf,jpg (extension whitelist + finfo MIME check).
+ * file, mimes:pdf,jpg (extension whitelist + finfo MIME check), regex:/pattern/,
+ * strong_password (8+ chars with at least one letter and one digit).
+ *
+ * A regex containing "|" must be given in array form: ['required', 'regex:/^(a|b)$/'].
  *
  * Fields without "required" that are empty skip all other rules.
  * min/max compare numbers for numeric/integer fields, kilobytes for files,
@@ -203,6 +206,11 @@ class Validator
             'exists' => $this->checkExists($label, $value, $param),
             'file' => $this->isValidUpload($value) ? null : "$label must be a successfully uploaded file.",
             'mimes' => $this->checkMimes($label, $value, $param),
+            'regex' => (is_scalar($value) && preg_match($param, (string) $value) === 1)
+                ? null : "$label format is invalid.",
+            'strong_password' => (is_string($value) && mb_strlen($value) >= 8
+                && preg_match('/\pL/u', $value) === 1 && preg_match('/\d/', $value) === 1)
+                ? null : "$label must be at least 8 characters and include a letter and a number.",
             default => throw new InvalidArgumentException("Unknown validation rule [$rule]."),
         };
     }

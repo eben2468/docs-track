@@ -74,6 +74,15 @@ final class Session
     }
 
     /**
+     * Clear all data and issue a new session ID, keeping the session usable (for flash messages).
+     */
+    public static function invalidate(): void
+    {
+        $_SESSION = [self::FLASH_NEW => [], self::FLASH_OLD => []];
+        self::regenerate();
+    }
+
+    /**
      * Clear all data and destroy the session and its cookie.
      */
     public static function destroy(): void

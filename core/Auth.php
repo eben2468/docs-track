@@ -66,6 +66,37 @@ final class Auth
     }
 
     /**
+     * Mark a user as logged in: new session ID and CSRF token (prevents fixation).
+     * Credential checks, throttling and auditing happen in AuthService.
+     */
+    public static function login(int $userId): void
+    {
+        Session::regenerate();
+        Csrf::regenerate();
+        Session::put(self::SESSION_KEY, $userId);
+        self::forgetCachedUser();
+    }
+
+    /**
+     * Log out: clear all session data and issue a new session ID. The session stays
+     * active so a flash message can still be shown on the next page.
+     */
+    public static function logout(): void
+    {
+        Session::invalidate();
+        self::forgetCachedUser();
+    }
+
+    /**
+     * Reload the user row on next access (after profile or role changes).
+     */
+    public static function forgetCachedUser(): void
+    {
+        self::$user = null;
+        self::$loaded = false;
+    }
+
+    /**
      * Whether the logged-in user has one of the given roles.
      */
     public static function hasRole(string ...$roles): bool

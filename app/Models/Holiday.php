@@ -32,6 +32,32 @@ final class Holiday extends Model
     }
 
     /**
+     * Holidays in a calendar year, by date.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function forYear(int $year): array
+    {
+        return $this->db->fetchAll(
+            'SELECT * FROM holidays WHERE holiday_date BETWEEN ? AND ? ORDER BY holiday_date',
+            [sprintf('%04d-01-01', $year), sprintf('%04d-12-31', $year)]
+        );
+    }
+
+    /**
+     * Years that have at least one holiday, newest first.
+     *
+     * @return list<int>
+     */
+    public function years(): array
+    {
+        return array_map('intval', array_column(
+            $this->db->fetchAll('SELECT DISTINCT YEAR(holiday_date) AS y FROM holidays ORDER BY y DESC'),
+            'y'
+        ));
+    }
+
+    /**
      * Remove a holiday. Returns affected rows.
      */
     public function delete(int $id): int

@@ -234,6 +234,81 @@ if (!function_exists('auth')) {
     }
 }
 
+if (!function_exists('setting')) {
+    /**
+     * An application setting (admin-editable, FR-15). Falls back to the built-in
+     * default if the database is unavailable, so error pages still render.
+     */
+    function setting(string $key): string
+    {
+        try {
+            return (new \App\Services\SettingService())->get($key);
+        } catch (\PDOException) {
+            return \App\Services\SettingService::DEFAULTS[$key] ?? '';
+        }
+    }
+}
+
+if (!function_exists('invalid')) {
+    /**
+     * " is-invalid" when the field has a validation error (for Bootstrap form controls).
+     */
+    function invalid(string $field): string
+    {
+        return error($field) !== null ? ' is-invalid' : '';
+    }
+}
+
+if (!function_exists('feedback')) {
+    /**
+     * The Bootstrap invalid-feedback element for a field's first error ('' when none).
+     */
+    function feedback(string $field): string
+    {
+        $message = error($field);
+
+        return $message === null ? '' : '<div class="invalid-feedback">' . e($message) . '</div>';
+    }
+}
+
+if (!function_exists('current_path')) {
+    /**
+     * Route path of the current request (e.g. "/admin/users"), for active menu items.
+     */
+    function current_path(): string
+    {
+        return Core\Request::normalisePath(
+            (string) ($_SERVER['REQUEST_URI'] ?? '/'),
+            (string) parse_url((string) Config::get('app.url', ''), PHP_URL_PATH)
+        );
+    }
+}
+
+if (!function_exists('role_label')) {
+    function role_label(string $role): string
+    {
+        return match ($role) {
+            'admin' => 'Administrator',
+            'hod' => 'Head of Department',
+            default => 'Staff',
+        };
+    }
+}
+
+if (!function_exists('format_datetime')) {
+    /**
+     * Format a DB datetime for display in the app timezone ('—' when empty).
+     */
+    function format_datetime(?string $value, string $format = 'j M Y, H:i'): string
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        return (new DateTimeImmutable($value))->format($format);
+    }
+}
+
 if (!function_exists('now')) {
     /**
      * Current time in the application timezone (Africa/Accra).

@@ -19,7 +19,7 @@ final class HomeController extends Controller
     public function index(Request $request): Response
     {
         return $this->view('home', [
-            'title' => 'Foundation check',
+            'title' => 'Home',
             'checks' => [
                 'PHP version' => [true, PHP_VERSION],
                 'Environment' => [true, (string) config('app.env')],

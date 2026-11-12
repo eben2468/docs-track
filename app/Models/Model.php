@@ -176,6 +176,38 @@ abstract class Model
     }
 
     /**
+     * Paginate a custom query written in a subclass. $select, $fromWhere and $orderBy are
+     * SQL fragments from code only; every user-supplied value must be in $bindings.
+     *
+     * @param list<mixed> $bindings
+     * @return array{data: list<array<string, mixed>>, total: int, page: int, per_page: int, last_page: int}
+     */
+    protected function paginateSql(string $select, string $fromWhere, array $bindings, string $orderBy, int $page, int $perPage = 25): array
+    {
+        $perPage = max(1, min(200, $perPage));
+        $total = (int) $this->db->fetchValue("SELECT COUNT(*) $fromWhere", $bindings);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $lastPage);
+        $offset = ($page - 1) * $perPage;
+
+        return [
+            'data' => $this->db->fetchAll("SELECT $select $fromWhere ORDER BY $orderBy LIMIT $perPage OFFSET $offset", $bindings),
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'last_page' => $lastPage,
+        ];
+    }
+
+    /**
+     * Escape LIKE wildcards in user input and wrap it as "%term%".
+     */
+    protected static function likeTerm(string $term): string
+    {
+        return '%' . addcslashes(trim($term), '%_\\') . '%';
+    }
+
+    /**
      * @param array<string, mixed> $conditions
      * @return array{0: string, 1: list<mixed>}
      */

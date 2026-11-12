@@ -81,7 +81,74 @@
     border-left-color: #f2b632;
 }
 
+.app-nav .nav-link.disabled { color: rgba(255, 255, 255, .45); }
+
+.app-nav-heading {
+    margin: 1rem 1.25rem .35rem;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .55);
+}
+
+.app-soon {
+    font-size: .6rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, .12);
+    color: rgba(255, 255, 255, .7);
+}
+
+.app-brand-logo { width: 28px; height: 28px; object-fit: contain; border-radius: 4px; background: #fff; }
+
+.app-skip-link {
+    position: absolute;
+    z-index: 1100;
+    top: .5rem;
+    left: .5rem;
+    padding: .5rem 1rem;
+    background: #fff;
+    border-radius: .25rem;
+}
+
 .app-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+.app-search { width: 100%; max-width: 360px; }
+
+.app-topbar-icon { font-size: 1.25rem; color: var(--bs-body-color); padding: .25rem .5rem; }
+
+.app-user-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--bs-body-color);
+    text-decoration: none;
+}
+
+.app-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--dts-primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: .875rem;
+}
+
+.form-narrow { max-width: 560px; }
+
+.settings-logo-preview {
+    display: inline-flex;
+    padding: .5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .375rem;
+    background: #fff;
+}
+
+.settings-logo-preview img { max-width: 120px; max-height: 80px; object-fit: contain; }
 
 .app-topbar {
     position: sticky;
@@ -130,6 +197,8 @@
 .auth-card { width: 100%; max-width: 420px; border: 0; }
 
 .auth-logo { font-size: 2.5rem; color: var(--dts-primary); }
+
+.auth-logo-img { max-width: 96px; max-height: 72px; object-fit: contain; }
 
 /* ---------- Public layout ---------- */
 
