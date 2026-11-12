@@ -391,6 +391,52 @@
 
 .timeline-meta dd { margin: 0; }
 
+/* ---------- Dashboards (FR-11) ---------- */
+
+.stat-card { color: var(--bs-body-color); transition: transform .1s ease, box-shadow .1s ease; border-top: 3px solid transparent; }
+
+.stat-card:hover, .stat-card:focus-visible { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important; }
+
+.stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 3rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: .75rem;
+    font-size: 1.4rem;
+}
+
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+
+.stat-label { font-weight: 600; }
+
+.stat-hint { font-size: .75rem; color: var(--bs-secondary-color); }
+
+.stat-primary { border-top-color: var(--dts-primary); }
+.stat-primary .stat-icon { background: rgba(var(--bs-primary-rgb), .1); color: var(--dts-primary); }
+
+.stat-warning { border-top-color: var(--bs-warning); }
+.stat-warning .stat-icon { background: rgba(var(--bs-warning-rgb), .15); color: var(--bs-warning-text-emphasis); }
+
+.stat-danger { border-top-color: var(--bs-danger); }
+.stat-danger .stat-icon { background: rgba(var(--bs-danger-rgb), .1); color: var(--bs-danger); }
+
+.stat-success { border-top-color: var(--bs-success); }
+.stat-success .stat-icon { background: rgba(var(--bs-success-rgb), .1); color: var(--bs-success); }
+
+.stat-secondary { border-top-color: var(--bs-secondary); }
+.stat-secondary .stat-icon { background: rgba(var(--bs-secondary-rgb), .1); color: var(--bs-secondary); }
+
+.chart-box { position: relative; height: 240px; }
+
+.chart-box-doughnut { height: 220px; }
+
+.dash-title { max-width: 22rem; }
+
+.activity-feed { max-height: 460px; overflow-y: auto; }
+
 /* ---------- Notifications (FR-9) ---------- */
 
 .notif-badge {

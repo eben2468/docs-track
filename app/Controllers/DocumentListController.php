@@ -18,7 +18,7 @@ use Core\Response;
  */
 final class DocumentListController extends Controller
 {
-    private const FILTER_KEYS = ['q', 'type', 'status', 'priority', 'origin', 'current', 'from', 'to'];
+    private const FILTER_KEYS = ['q', 'type', 'status', 'priority', 'origin', 'current', 'from', 'to', 'flag'];
 
     public function index(Request $request): Response
     {
@@ -117,6 +117,9 @@ final class DocumentListController extends Controller
             if ($value !== '') {
                 $filters[$key] = $value;
             }
+        }
+        if (isset($filters['flag']) && !in_array($filters['flag'], Document::FLAGS, true)) {
+            unset($filters['flag']);
         }
 
         $sort = $this->queryString($request, 'sort');

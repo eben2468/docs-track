@@ -55,6 +55,110 @@ final class Document extends Model
         );
     }
 
+    /**
+     * Documents joined with type, departments, holder, the open movement (om, with its
+     * departments td/fd and sender fu) and the last received movement (lr).
+     * DocumentScope conditions are written against these aliases.
+     */
+    public const BASE_FROM = "FROM documents d
+            JOIN document_types t ON t.id = d.document_type_id
+            JOIN departments od ON od.id = d.origin_department_id
+            JOIN departments cd ON cd.id = d.current_department_id
+            LEFT JOIN users hu ON hu.id = d.current_holder_id
+            LEFT JOIN document_movements om ON om.document_id = d.id AND om.status = 'in_transit'
+            LEFT JOIN departments td ON td.id = om.to_department_id
+            LEFT JOIN departments fd ON fd.id = om.from_department_id
+            LEFT JOIN users fu ON fu.id = om.from_user_id
+            LEFT JOIN document_movements lr ON lr.id = (
+                SELECT x.id FROM document_movements x
+                WHERE x.document_id = d.id AND x.status = 'received'
+                ORDER BY x.received_at DESC, x.id DESC LIMIT 1
+            )";
+
+    /** Extra list filters ("flag") matching the dashboard cards. */
+    public const FLAGS = ['overdue', 'stuck', 'completed-month'];
+
+    /**
+     * Count documents matching all the given DocumentScope conditions.
+     *
+     * @param list<array{0: string, 1: list<mixed>}> $scopes
+     */
+    public function countScoped(array $scopes): int
+    {
+        $where = [];
+        $bindings = [];
+        foreach ($scopes as [$sql, $params]) {
+            $where[] = $sql;
+            array_push($bindings, ...$params);
+        }
+
+        return (int) $this->db->fetchValue(
+            'SELECT COUNT(*) ' . self::BASE_FROM . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where)),
+            $bindings
+        );
+    }
+
+    /**
+     * Rows (with the listing columns) matching the given scopes, for dashboard tables.
+     *
+     * @param list<array{0: string, 1: list<mixed>}> $scopes
+     * @return list<array<string, mixed>>
+     */
+    public function findScoped(array $scopes, string $orderBy, int $limit): array
+    {
+        $where = [];
+        $bindings = [];
+        foreach ($scopes as [$sql, $params]) {
+            $where[] = $sql;
+            array_push($bindings, ...$params);
+        }
+
+        return $this->db->fetchAll(
+            'SELECT d.id, d.tracking_no, d.title, d.confidentiality, d.priority, d.status,
+                    od.code AS origin_code, cd.code AS current_code, cd.name AS current_name, hu.full_name AS holder_name,
+                    om.sent_at AS om_sent_at, om.due_date AS om_due_date, td.code AS om_to_code, td.name AS om_to_name,
+                    fd.code AS om_from_code, fu.full_name AS om_from_user,
+                    lr.received_at AS lr_received_at, lr.due_date AS lr_due_date '
+            . self::BASE_FROM . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where))
+            . " ORDER BY $orderBy LIMIT " . max(1, min(200, $limit)),
+            $bindings
+        );
+    }
+
+    /**
+     * University-wide number of documents per status (all statuses present, zero-filled).
+     *
+     * @return array<string, int>
+     */
+    public function countByStatus(): array
+    {
+        $counts = array_fill_keys(self::STATUSES, 0);
+        foreach ($this->db->fetchAll('SELECT status, COUNT(*) AS n FROM documents GROUP BY status') as $row) {
+            $counts[$row['status']] = (int) $row['n'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Departments holding the most overdue documents.
+     *
+     * @return list<array{id: int, code: string, name: string, overdue: int}>
+     */
+    public function topOverdueDepartments(int $limit = 5): array
+    {
+        [$sql, $bindings] = DocumentScope::overdue();
+        $rows = $this->db->fetchAll(
+            'SELECT cd.id, cd.code, cd.name, COUNT(*) AS overdue ' . self::BASE_FROM . " WHERE $sql
+             GROUP BY cd.id, cd.code, cd.name ORDER BY overdue DESC, cd.name ASC LIMIT " . max(1, min(50, $limit)),
+            $bindings
+        );
+
+        return array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'], 'code' => (string) $r['code'], 'name' => (string) $r['name'], 'overdue' => (int) $r['overdue'],
+        ], $rows);
+    }
+
     /** List tabs (FR-12). "all" is for administrators; "all-accessible" is what a user may view. */
     public const TABS = ['incoming', 'with-us', 'outgoing', 'registered', 'completed', 'all', 'all-accessible'];
 
@@ -116,13 +220,11 @@ final class Document extends Model
     {
         $dept = (int) $user['department_id'];
 
-        return array_map('intval', $this->db->fetch(
-            "SELECT
-                (SELECT COUNT(*) FROM document_movements WHERE to_department_id = ? AND status = 'in_transit') AS incoming,
-                (SELECT COUNT(*) FROM documents WHERE current_department_id = ? AND status = 'received') AS with_us,
-                (SELECT COUNT(*) FROM document_movements WHERE from_department_id = ? AND status = 'in_transit') AS outgoing",
-            [$dept, $dept, $dept]
-        ) ?? []);
+        return [
+            'incoming' => $this->countScoped([DocumentScope::incoming($dept)]),
+            'with_us' => $this->countScoped([DocumentScope::withUs($dept)]),
+            'outgoing' => $this->countScoped([DocumentScope::outgoing($dept)]),
+        ];
     }
 
     /**
@@ -149,58 +251,32 @@ final class Document extends Model
             (d.status = 'received' AND lr.due_date IS NOT NULL AND lr.due_date < CURDATE()) AS is_overdue,
             (d.status = 'in_transit' AND om.sent_at < (NOW() - INTERVAL $hours HOUR)) AS is_stuck";
 
-        $from = "FROM documents d
-            JOIN document_types t ON t.id = d.document_type_id
-            JOIN departments od ON od.id = d.origin_department_id
-            JOIN departments cd ON cd.id = d.current_department_id
-            LEFT JOIN users hu ON hu.id = d.current_holder_id
-            LEFT JOIN document_movements om ON om.document_id = d.id AND om.status = 'in_transit'
-            LEFT JOIN departments td ON td.id = om.to_department_id
-            LEFT JOIN departments fd ON fd.id = om.from_department_id
-            LEFT JOIN users fu ON fu.id = om.from_user_id
-            LEFT JOIN document_movements lr ON lr.id = (
-                SELECT x.id FROM document_movements x
-                WHERE x.document_id = d.id AND x.status = 'received'
-                ORDER BY x.received_at DESC, x.id DESC LIMIT 1
-            )";
-
         $where = [];
         $bindings = [];
-        $accessible = '(d.origin_department_id = ? OR d.current_department_id = ? OR EXISTS (
-            SELECT 1 FROM document_movements r WHERE r.document_id = d.id AND (r.from_department_id = ? OR r.to_department_id = ?)))';
-
-        switch ($tab) {
-            case 'incoming':
-                $where[] = 'om.to_department_id = ?';
-                $bindings[] = $dept;
-                break;
-            case 'with-us':
-                $where[] = "d.status = 'received' AND d.current_department_id = ?";
-                $bindings[] = $dept;
-                break;
-            case 'outgoing':
-                $where[] = 'om.from_department_id = ?';
-                $bindings[] = $dept;
-                break;
-            case 'registered':
-                $where[] = 'd.origin_department_id = ?';
-                $bindings[] = $dept;
-                break;
-            case 'completed':
-                $where[] = "d.status = 'completed'";
-                if (!$isAdmin) {
-                    $where[] = $accessible;
-                    array_push($bindings, $dept, $dept, $dept, $dept);
-                }
-                break;
-            default: // all, all-accessible
-                if (!$isAdmin) {
-                    $where[] = $accessible;
-                    array_push($bindings, $dept, $dept, $dept, $dept);
-                }
+        $scopes = match ($tab) {
+            'incoming' => [DocumentScope::incoming($dept)],
+            'with-us' => [DocumentScope::withUs($dept)],
+            'outgoing' => [DocumentScope::outgoing($dept)],
+            'registered' => [DocumentScope::registered($dept)],
+            'completed' => [["d.status = 'completed'", []]],
+            default => [], // all, all-accessible
+        };
+        if (in_array($tab, ['completed', 'all', 'all-accessible'], true) && !$isAdmin) {
+            $scopes[] = DocumentScope::accessibleTo($dept);
+        }
+        $scopes[] = match ($filters['flag'] ?? '') {
+            'overdue' => DocumentScope::overdue(),
+            'stuck' => DocumentScope::stuck($hours),
+            'completed-month' => DocumentScope::completedThisMonth(),
+            default => null,
+        };
+        foreach (array_filter($scopes) as [$sql, $params]) {
+            $where[] = $sql;
+            array_push($bindings, ...$params);
         }
 
         $this->applyFilters($filters, $where, $bindings);
+        $from = self::BASE_FROM;
 
         $sortSql = self::SORTS[$sort] ?? self::SORTS[self::defaultSort($tab)];
         $direction = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';

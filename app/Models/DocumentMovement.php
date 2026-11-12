@@ -107,6 +107,123 @@ final class DocumentMovement extends Model
     }
 
     /**
+     * Open movements not received within $hours and not alerted within the last
+     * $repeatHours (FR-10 step 1).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function unreceivedForAlert(int $hours, int $repeatHours): array
+    {
+        return $this->db->fetchAll(
+            'SELECT m.id, m.document_id, m.from_user_id, m.from_department_id, m.to_department_id, m.to_user_id, m.sent_at, m.due_date,
+                    TIMESTAMPDIFF(MINUTE, m.sent_at, NOW()) AS minutes_waiting,
+                    d.tracking_no, d.title, d.confidentiality, d.priority,
+                    fd.name AS from_department_name, td.name AS to_department_name, fu.full_name AS from_user_name
+             FROM document_movements m
+             JOIN documents d ON d.id = m.document_id
+             JOIN departments fd ON fd.id = m.from_department_id
+             JOIN departments td ON td.id = m.to_department_id
+             JOIN users fu ON fu.id = m.from_user_id
+             WHERE m.status = \'in_transit\' AND d.status = \'in_transit\'
+               AND m.sent_at < (NOW() - INTERVAL ' . max(1, $hours) . ' HOUR)
+               AND (m.last_alert_at IS NULL OR m.last_alert_at < (NOW() - INTERVAL ' . max(1, $repeatHours) . ' HOUR))
+             ORDER BY m.sent_at',
+        );
+    }
+
+    /**
+     * Received documents past the due date of the movement that brought them to their
+     * holder, not alerted within the last $repeatHours (FR-10 step 2).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function overdueForAlert(int $repeatHours): array
+    {
+        return $this->db->fetchAll(
+            'SELECT m.id, m.document_id, m.due_date, m.received_at, m.to_department_id,
+                    DATEDIFF(CURDATE(), m.due_date) AS days_overdue,
+                    d.tracking_no, d.title, d.confidentiality, d.priority, d.current_department_id,
+                    cd.name AS department_name, hu.full_name AS holder_name
+             FROM documents d
+             JOIN document_movements m ON m.id = (
+                 SELECT x.id FROM document_movements x
+                 WHERE x.document_id = d.id AND x.status = \'received\'
+                 ORDER BY x.received_at DESC, x.id DESC LIMIT 1
+             )
+             JOIN departments cd ON cd.id = d.current_department_id
+             LEFT JOIN users hu ON hu.id = d.current_holder_id
+             WHERE d.status = \'received\' AND m.due_date IS NOT NULL AND m.due_date < CURDATE()
+               AND (m.last_alert_at IS NULL OR m.last_alert_at < (NOW() - INTERVAL ' . max(1, $repeatHours) . ' HOUR))
+             ORDER BY m.due_date',
+        );
+    }
+
+    /**
+     * Record that an alert was sent for a movement (prevents repeats within the window).
+     */
+    public function markAlerted(int $movementId): void
+    {
+        $this->db->execute('UPDATE document_movements SET last_alert_at = NOW() WHERE id = ?', [$movementId]);
+    }
+
+    /**
+     * Latest movement activity involving a department (sent from or to it), newest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentForDepartment(int $departmentId, int $limit = 10): array
+    {
+        return $this->db->fetchAll(
+            "SELECT m.id, m.document_id, m.action, m.status, m.sent_at, m.received_at, m.recalled_at,
+                    GREATEST(m.sent_at, COALESCE(m.received_at, m.sent_at), COALESCE(m.recalled_at, m.sent_at)) AS activity_at,
+                    d.tracking_no, d.title, d.confidentiality, d.priority, d.status AS document_status,
+                    fd.code AS from_code, td.code AS to_code, m.from_department_id, m.to_department_id
+             FROM document_movements m
+             JOIN documents d ON d.id = m.document_id
+             JOIN departments fd ON fd.id = m.from_department_id
+             JOIN departments td ON td.id = m.to_department_id
+             WHERE m.from_department_id = ? OR m.to_department_id = ?
+             ORDER BY activity_at DESC, m.id DESC
+             LIMIT " . max(1, min(100, $limit)),
+            [$departmentId, $departmentId]
+        );
+    }
+
+    /**
+     * Average time a department took to process documents over the last $days days:
+     * from receiving a document to sending it on (next non-recalled movement out) or
+     * completing it, counting only documents whose processing ended in the period.
+     *
+     * @return array{seconds: ?int, count: int}
+     */
+    public function averageProcessing(int $departmentId, int $days = 30): array
+    {
+        $row = $this->db->fetch(
+            "SELECT AVG(TIMESTAMPDIFF(SECOND, x.received_at, x.ended_at)) AS avg_seconds, COUNT(*) AS n
+             FROM (
+                 SELECT m.received_at,
+                        COALESCE(
+                            (SELECT MIN(n.sent_at) FROM document_movements n
+                             WHERE n.document_id = m.document_id AND n.from_department_id = m.to_department_id
+                               AND n.status <> 'recalled' AND n.sent_at >= m.received_at),
+                            (SELECT d.completed_at FROM documents d
+                             WHERE d.id = m.document_id AND d.status = 'completed'
+                               AND d.current_department_id = m.to_department_id AND d.completed_at >= m.received_at)
+                        ) AS ended_at
+                 FROM document_movements m
+                 WHERE m.to_department_id = ? AND m.status = 'received'
+             ) x
+             WHERE x.ended_at IS NOT NULL AND x.ended_at >= (NOW() - INTERVAL " . max(1, $days) . ' DAY)',
+            [$departmentId]
+        );
+
+        return [
+            'seconds' => $row !== null && $row['avg_seconds'] !== null ? (int) round((float) $row['avg_seconds']) : null,
+            'count' => (int) ($row['n'] ?? 0),
+        ];
+    }
+
+    /**
      * Number of movements waiting for a department to receive them.
      */
     public function countIncoming(int $departmentId): int

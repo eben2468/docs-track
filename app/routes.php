@@ -17,7 +17,7 @@ use App\Controllers\DocumentListController;
 use App\Controllers\ScanController;
 use App\Controllers\SearchController;
 use App\Controllers\TrackController;
-use App\Controllers\HomeController;
+use App\Controllers\DashboardController;
 use App\Controllers\MovementController;
 use App\Controllers\NotificationController;
 use App\Controllers\PasswordResetController;
@@ -62,7 +62,7 @@ return static function (Router $router): void {
 
         // Signed-in users.
         $router->group(['middleware' => ['auth']], static function (Router $router): void {
-            $router->get('/', [HomeController::class, 'index']);
+            $router->get('/', [DashboardController::class, 'index']);
             $router->post('/logout', [AuthController::class, 'logout']);
             $router->get('/profile', [ProfileController::class, 'show']);
             $router->post('/profile', [ProfileController::class, 'updateDetails']);
