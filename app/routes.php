@@ -8,8 +8,10 @@ use App\Controllers\Admin\HolidayController;
 use App\Controllers\Admin\SettingController;
 use App\Controllers\Admin\UserController;
 use App\Controllers\Admin\UserImportController;
+use App\Controllers\AttachmentController;
 use App\Controllers\AuthController;
 use App\Controllers\BrandingController;
+use App\Controllers\DocumentController;
 use App\Controllers\HomeController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\ProfileController;
@@ -54,6 +56,17 @@ return static function (Router $router): void {
             $router->get('/profile', [ProfileController::class, 'show']);
             $router->post('/profile', [ProfileController::class, 'updateDetails']);
             $router->post('/profile/password', [ProfileController::class, 'updatePassword']);
+
+            // Documents.
+            $router->get('/documents/create', [DocumentController::class, 'create']);
+            $router->post('/documents/create', [DocumentController::class, 'store']);
+            $router->get('/documents/{id:\d+}', [DocumentController::class, 'show']);
+            $router->get('/documents/{id:\d+}/registered', [DocumentController::class, 'registered']);
+            $router->get('/documents/{id:\d+}/label', [DocumentController::class, 'label']);
+            $router->post('/documents/{id:\d+}/cancel', [DocumentController::class, 'cancel']);
+            $router->post('/documents/{id:\d+}/attachments', [DocumentController::class, 'attachments']);
+            $router->get('/attachments/{id:\d+}/download', [AttachmentController::class, 'download']);
+            $router->post('/attachments/{id:\d+}/visibility', [AttachmentController::class, 'visibility'], ['role:admin']);
 
             // Administrators.
             $router->group(['prefix' => '/admin', 'middleware' => ['role:admin']], static function (Router $router): void {

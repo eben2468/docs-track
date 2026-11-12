@@ -13,6 +13,9 @@ final class Response
     /** @var array<string, string> */
     private array $headers = [];
 
+    /** File streamed as the body instead of $body (see file()). */
+    private ?string $filePath = null;
+
     public function __construct(private string $body = '', private int $status = 200)
     {
     }
@@ -43,6 +46,29 @@ final class Response
         $location = preg_match('#^https?://#i', $to) === 1 ? $to : url($to);
 
         return (new self('', $status))->header('Location', $location);
+    }
+
+    /**
+     * Stream a file from disk as a download (or inline), with a safe, UTF-8 aware filename.
+     */
+    public static function file(string $path, string $downloadName, string $mime, bool $inline = false): self
+    {
+        $ascii = preg_replace('/[^A-Za-z0-9._ -]/', '_', $downloadName) ?: 'download';
+        $disposition = sprintf(
+            '%s; filename="%s"; filename*=UTF-8\'\'%s',
+            $inline ? 'inline' : 'attachment',
+            $ascii,
+            rawurlencode($downloadName)
+        );
+
+        $response = (new self('', 200))
+            ->header('Content-Type', $mime)
+            ->header('Content-Disposition', $disposition)
+            ->header('Content-Length', (string) filesize($path))
+            ->header('Cache-Control', 'private, no-store');
+        $response->filePath = $path;
+
+        return $response;
     }
 
     /**
@@ -165,6 +191,19 @@ final class Response
             }
         }
 
+        if ($this->filePath !== null) {
+            readfile($this->filePath);
+            return;
+        }
+
         echo $this->body;
+    }
+
+    /**
+     * Path of the file this response streams, if any.
+     */
+    public function filePath(): ?string
+    {
+        return $this->filePath;
     }
 }

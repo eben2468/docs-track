@@ -27,6 +27,11 @@ final class CsrfMiddleware implements Middleware
             return $next($request);
         }
 
+        // PHP discards the whole body when it exceeds post_max_size, which would look like a CSRF failure.
+        if ($request->all() === [] && $request->files() === [] && self::bodyTooLarge($request)) {
+            throw new HttpException(413, 'The upload is larger than the server allows. Please choose smaller files and try again.');
+        }
+
         $token = $request->input(Csrf::FIELD) ?? $request->header(Csrf::HEADER);
 
         if (!Csrf::verify(is_string($token) ? $token : null)) {
@@ -34,5 +39,20 @@ final class CsrfMiddleware implements Middleware
         }
 
         return $next($request);
+    }
+
+    private static function bodyTooLarge(Request $request): bool
+    {
+        $length = (int) ($request->server('CONTENT_LENGTH') ?? 0);
+        $limit = trim((string) ini_get('post_max_size'));
+        $bytes = (int) $limit;
+        $bytes *= match (strtolower(substr($limit, -1))) {
+            'g' => 1024 ** 3,
+            'm' => 1024 ** 2,
+            'k' => 1024,
+            default => 1,
+        };
+
+        return $bytes > 0 && $length > $bytes;
     }
 }

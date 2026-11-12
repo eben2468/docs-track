@@ -147,6 +147,7 @@ final class App
             403 => 'Forbidden',
             404 => 'Page Not Found',
             405 => 'Method Not Allowed',
+            413 => 'Upload Too Large',
             419 => 'Page Expired',
             429 => 'Too Many Requests',
             default => 'Server Error',

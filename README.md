@@ -70,7 +70,7 @@ gazette (Admin → Holidays) before relying on due-date calculations.
 |---|---|
 | Install dependencies | `composer install` |
 | Dev server | `php -S localhost:8000 -t public` |
-| Run tests | `vendor/bin/phpunit` |
+| Run tests | `vendor/bin/phpunit` (integration tests create and rebuild a separate `vvu_dts_test` database; override with `DB_TEST_*` env vars; skipped if MySQL is down) |
 | Run pending migrations | `php database/migrate.php` |
 | Rebuild DB + seed data | `php database/migrate.php --fresh --seed` (refused in production without `--force`) |
 | Seed only (safe to repeat) | `php database/migrate.php --seed` |

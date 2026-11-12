@@ -35,6 +35,24 @@ final class Database
     }
 
     /**
+     * A separate (non-shared) connection with its own config, e.g. for tests.
+     *
+     * @param array<string, mixed> $config Same keys as config/database.php
+     */
+    public static function fromConfig(array $config): self
+    {
+        return new self($config);
+    }
+
+    /**
+     * Make $db the shared instance returned by instance() (tests only).
+     */
+    public static function setInstance(?self $db): void
+    {
+        self::$instance = $db;
+    }
+
+    /**
      * Get the underlying PDO connection, connecting on first use.
      */
     public function pdo(): PDO

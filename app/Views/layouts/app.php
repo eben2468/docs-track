@@ -18,7 +18,7 @@ $hasLogo = setting('logo_path') !== '';
  */
 $mainMenu = [
     ['Dashboard', 'speedometer2', '/'],
-    ['Register Document', 'file-earmark-plus', null],
+    ['Register Document', 'file-earmark-plus', '/documents/create'],
     ['Incoming', 'inbox', null],
     ['With Us', 'folder2-open', null],
     ['Outgoing', 'send', null],

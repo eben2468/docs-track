@@ -144,6 +144,16 @@ final class Request
         return is_string($value) ? $value : null;
     }
 
+    /**
+     * A raw $_SERVER value, or null.
+     */
+    public function server(string $key): ?string
+    {
+        $value = $this->server[$key] ?? null;
+
+        return is_scalar($value) ? (string) $value : null;
+    }
+
     public function ip(): string
     {
         return (string) ($this->server['REMOTE_ADDR'] ?? '0.0.0.0');

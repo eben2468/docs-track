@@ -231,6 +231,107 @@
     word-break: break-all;
 }
 
+/* ---------- Documents ---------- */
+
+.text-prewrap { white-space: pre-wrap; }
+
+.min-w-0 { min-width: 0; }
+
+.registered-card { max-width: 640px; }
+
+.registered-icon { font-size: 3rem; color: var(--bs-success); }
+
+.tracking-no-display {
+    display: inline-block;
+    padding: .5rem 1rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    border: 2px dashed var(--bs-border-color);
+    border-radius: .5rem;
+}
+
+/* ---------- QR labels (spec 5.2) ---------- */
+
+.label-size-switch { display: flex; gap: .5rem; justify-content: center; margin-bottom: 1rem; }
+
+.dts-label {
+    margin: 0 auto;
+    background: #fff;
+    color: #000;
+    border: 1px dashed #999;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.dts-label-qr img { display: block; width: 100%; height: auto; }
+
+.dts-label-org { font-size: .75em; text-transform: uppercase; letter-spacing: .05em; color: #333; }
+
+.dts-label-tracking { font-family: "Courier New", monospace; font-weight: 700; word-break: break-all; }
+
+.dts-label-title { font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; }
+
+.dts-label-confidential { letter-spacing: .15em; }
+
+.dts-label-meta { display: grid; grid-template-columns: auto 1fr; gap: .1em .6em; margin: 0; }
+
+.dts-label-meta dt { font-weight: 400; color: #444; }
+
+.dts-label-meta dd { margin: 0; font-weight: 600; }
+
+.dts-label-hint { color: #555; word-break: break-all; }
+
+/* A4: one large label at the top of the sheet. */
+.dts-label-a4 {
+    page: a4label;
+    width: 180mm;
+    padding: 12mm;
+    text-align: center;
+    font-size: 14pt;
+}
+
+.dts-label-a4 .dts-label-qr { width: 110mm; margin: 0 auto 8mm; }
+
+.dts-label-a4 .dts-label-tracking { font-size: 26pt; margin: 2mm 0 4mm; }
+
+.dts-label-a4 .dts-label-title { font-size: 16pt; -webkit-line-clamp: 3; margin-bottom: 6mm; }
+
+.dts-label-a4 .dts-label-meta { justify-content: center; text-align: left; margin-bottom: 6mm; }
+
+.dts-label-a4 .dts-label-hint { font-size: 10pt; }
+
+/* Sticker: 100 x 62 mm, QR on the left. */
+.dts-label-sticker {
+    page: sticker;
+    display: flex;
+    gap: 3mm;
+    align-items: center;
+    width: 100mm;
+    height: 62mm;
+    padding: 3mm;
+    box-sizing: border-box;
+    font-size: 8pt;
+    overflow: hidden;
+}
+
+.dts-label-sticker .dts-label-qr { flex: 0 0 40mm; }
+
+.dts-label-sticker .dts-label-text { flex: 1 1 auto; min-width: 0; }
+
+.dts-label-sticker .dts-label-tracking { font-size: 11pt; margin: 1mm 0; }
+
+.dts-label-sticker .dts-label-title { font-size: 8.5pt; -webkit-line-clamp: 2; margin-bottom: 1.5mm; }
+
+.dts-label-sticker .dts-label-hint { font-size: 6pt; margin-top: 1.5mm; }
+
+@page a4label { size: A4 portrait; margin: 15mm; }
+
+@page sticker { size: 100mm 62mm; margin: 0; }
+
+@media print {
+    .dts-label { border: 0; }
+}
+
 /* ---------- Print layout ---------- */
 
 .print-body { background: #fff; }
