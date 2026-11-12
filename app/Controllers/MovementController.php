@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentMovement;
+use App\Policies\DocumentPolicy;
 use App\Services\MovementService;
 use App\Services\ServiceException;
 use Core\Auth;
@@ -139,11 +141,20 @@ final class MovementController extends Controller
     }
 
     /**
+     * The document, if the user may view it (404 if missing, 403 if not), so direct POSTs
+     * never reveal anything about documents outside the user's route.
+     *
      * @return array<string, mixed>
      */
     private function document(string $id): array
     {
-        return (new Document())->find((int) $id) ?? throw new HttpException(404);
+        $document = (new Document())->find((int) $id) ?? throw new HttpException(404);
+        $route = (new DocumentMovement())->routeDepartmentIds((int) $document['id']);
+        if (!(new DocumentPolicy())->canView($this->user(), $document, $route)) {
+            throw new HttpException(403);
+        }
+
+        return $document;
     }
 
     /**

@@ -15,7 +15,7 @@ final class Document extends Model
     protected array $fillable = [
         'tracking_no', 'title', 'document_type_id', 'reference_no', 'description', 'priority',
         'confidentiality', 'format', 'pages', 'origin_department_id', 'created_by',
-        'current_department_id', 'current_holder_id', 'status', 'completed_at', 'completed_by',
+        'current_department_id', 'current_holder_id', 'current_movement_id', 'status', 'completed_at', 'completed_by',
     ];
 
     /**
@@ -69,11 +69,7 @@ final class Document extends Model
             LEFT JOIN departments td ON td.id = om.to_department_id
             LEFT JOIN departments fd ON fd.id = om.from_department_id
             LEFT JOIN users fu ON fu.id = om.from_user_id
-            LEFT JOIN document_movements lr ON lr.id = (
-                SELECT x.id FROM document_movements x
-                WHERE x.document_id = d.id AND x.status = 'received'
-                ORDER BY x.received_at DESC, x.id DESC LIMIT 1
-            )";
+            LEFT JOIN document_movements lr ON lr.id = d.current_movement_id";
 
     /** Extra list filters ("flag") matching the dashboard cards. */
     public const FLAGS = ['overdue', 'stuck', 'completed-month'];
@@ -91,11 +87,9 @@ final class Document extends Model
             $where[] = $sql;
             array_push($bindings, ...$params);
         }
+        $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
-        return (int) $this->db->fetchValue(
-            'SELECT COUNT(*) ' . self::BASE_FROM . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where)),
-            $bindings
-        );
+        return (int) $this->db->fetchValue('SELECT COUNT(*) ' . self::countFrom($whereSql) . $whereSql, $bindings);
     }
 
     /**
@@ -148,9 +142,13 @@ final class Document extends Model
     public function topOverdueDepartments(int $limit = 5): array
     {
         [$sql, $bindings] = DocumentScope::overdue();
+        $whereSql = " WHERE $sql";
         $rows = $this->db->fetchAll(
-            'SELECT cd.id, cd.code, cd.name, COUNT(*) AS overdue ' . self::BASE_FROM . " WHERE $sql
-             GROUP BY cd.id, cd.code, cd.name ORDER BY overdue DESC, cd.name ASC LIMIT " . max(1, min(50, $limit)),
+            'SELECT cd.id, cd.code, cd.name, x.overdue
+             FROM (SELECT d.current_department_id, COUNT(*) AS overdue ' . self::countFrom($whereSql) . $whereSql . '
+                   GROUP BY d.current_department_id) x
+             JOIN departments cd ON cd.id = x.current_department_id
+             ORDER BY x.overdue DESC, cd.name ASC LIMIT ' . max(1, min(50, $limit)),
             $bindings
         );
 
@@ -193,7 +191,66 @@ final class Document extends Model
     {
         [$select, $fromWhere, $bindings, $orderBy] = $this->listingQuery($user, $tab, $filters, $sort, $dir, $alertHours);
 
-        return $this->paginateSql($select, $fromWhere, $bindings, $orderBy, $page, $perPage);
+        $perPage = max(1, min(200, $perPage));
+        $whereSql = substr($fromWhere, strlen(self::BASE_FROM));
+        $total = (int) $this->db->fetchValue('SELECT COUNT(*) ' . self::countFrom($whereSql) . $whereSql, $bindings);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $lastPage);
+        $offset = ($page - 1) * $perPage;
+
+        return [
+            'data' => $this->pageRows($select, $whereSql, $bindings, $orderBy, $perPage, $offset),
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'last_page' => $lastPage,
+        ];
+    }
+
+    /**
+     * Deferred join: pick the page's document IDs with the leanest query that can filter and
+     * sort, then load the full rows (names, movements, flags) for just those IDs.
+     *
+     * @param list<mixed> $bindings
+     * @return list<array<string, mixed>>
+     */
+    private function pageRows(string $select, string $whereSql, array $bindings, string $orderBy, int $limit, int $offset): array
+    {
+        $ids = array_map('intval', array_column($this->db->fetchAll(
+            'SELECT d.id ' . self::countFrom($whereSql . ' ' . $orderBy) . $whereSql . " ORDER BY $orderBy LIMIT $limit OFFSET $offset",
+            $bindings
+        ), 'id'));
+        if ($ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        return $this->db->fetchAll("SELECT $select " . self::BASE_FROM . " WHERE d.id IN ($placeholders) ORDER BY $orderBy", $ids);
+    }
+
+    /**
+     * The smallest FROM clause able to evaluate a WHERE clause written for BASE_FROM:
+     * counting needs no names, so only the joins the conditions refer to are kept.
+     * (Inner joins to type/departments never change the count: their keys are NOT NULL FKs.)
+     */
+    private static function countFrom(string $whereSql): string
+    {
+        $from = 'FROM documents d';
+        if (preg_match('/\b(om|td|fd|fu)\./', $whereSql) === 1) {
+            $from .= " LEFT JOIN document_movements om ON om.document_id = d.id AND om.status = 'in_transit'";
+        }
+        if (preg_match('/\blr\./', $whereSql) === 1) {
+            $from .= ' LEFT JOIN document_movements lr ON lr.id = d.current_movement_id';
+        }
+        if (preg_match('/\bt\./', $whereSql) === 1) {
+            $from .= ' JOIN document_types t ON t.id = d.document_type_id';
+        }
+        if (preg_match('/\b(od|cd|hu)\./', $whereSql) === 1) {
+            return self::BASE_FROM; // rare: fall back to the full join
+        }
+
+        return $from . ' ';
     }
 
     /**
@@ -207,7 +264,7 @@ final class Document extends Model
     {
         [$select, $fromWhere, $bindings, $orderBy] = $this->listingQuery($user, $tab, $filters, $sort, $dir, $alertHours);
 
-        return $this->db->fetchAll("SELECT $select $fromWhere ORDER BY $orderBy LIMIT " . max(1, $limit), $bindings);
+        return $this->pageRows($select, substr($fromWhere, strlen(self::BASE_FROM)), $bindings, $orderBy, max(1, $limit), 0);
     }
 
     /**

@@ -121,6 +121,33 @@ final class DocumentPolicyTest extends TestCase
         $this->assertFalse($this->policy->canCancel($this->user(self::REG, 'staff', ['id' => 10]), $this->doc(['status' => 'in_transit', 'created_by' => 10])));
     }
 
+    public function testOnlyActiveAdminsManageHiddenAttachments(): void
+    {
+        $this->assertTrue($this->policy->canManageHiddenAttachments($this->user(self::ICT, 'admin')));
+        $this->assertFalse($this->policy->canManageHiddenAttachments($this->user(self::ICT, 'hod')));
+        $this->assertFalse($this->policy->canManageHiddenAttachments($this->user(self::ICT, 'staff')));
+        $this->assertFalse($this->policy->canManageHiddenAttachments($this->user(self::ICT, 'admin', ['is_active' => 0])));
+    }
+
+    public function testReceiveRejectsAMovementBelongingToAnotherDocument(): void
+    {
+        $doc = $this->doc(['status' => 'in_transit', 'id' => 1]);
+
+        $this->assertFalse($this->policy->canReceive($this->user(self::BUR), $doc, $this->movement(['document_id' => 2])));
+    }
+
+    public function testInactiveUsersCannotActOnMovements(): void
+    {
+        $inactive = ['is_active' => 0];
+        $inTransit = $this->doc(['status' => 'in_transit']);
+        $received = $this->doc(['status' => 'received']);
+
+        $this->assertFalse($this->policy->canReceive($this->user(self::BUR, 'staff', $inactive), $inTransit, $this->movement()));
+        $this->assertFalse($this->policy->canRecall($this->user(self::REG, 'admin', $inactive), $inTransit, $this->movement()));
+        $this->assertFalse($this->policy->canComplete($this->user(self::REG, 'staff', $inactive), $received));
+        $this->assertFalse($this->policy->canSend($this->user(self::REG, 'staff', $inactive), $received, null));
+    }
+
     /**
      * @param array<string, mixed> $extra
      * @return array<string, mixed>

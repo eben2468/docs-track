@@ -30,6 +30,9 @@ final class MovementService
 {
     public const RECEIVE_METHODS = ['click', 'qr', 'bulk'];
 
+    /** Most documents one bulk receive may handle. */
+    public const BULK_LIMIT = 100;
+
     private readonly Database $db;
 
     public function __construct(
@@ -140,6 +143,7 @@ final class MovementService
                 'status' => 'received',
                 'current_department_id' => (int) $movement['to_department_id'],
                 'current_holder_id' => (int) $user['id'],
+                'current_movement_id' => (int) $movement['id'],
             ]);
 
             $this->audit->log('document.received', [
@@ -173,9 +177,16 @@ final class MovementService
     public function receiveBulk(array $documentIds, array $user, ?string $receiptNote = null): array
     {
         $result = ['received' => [], 'failed' => []];
+        $ids = array_slice(array_values(array_unique(array_map('intval', $documentIds))), 0, self::BULK_LIMIT);
 
-        foreach (array_values(array_unique(array_map('intval', $documentIds))) as $id) {
-            $trackingNo = (string) ($this->documents->find($id)['tracking_no'] ?? "#$id");
+        foreach ($ids as $id) {
+            $document = $this->documents->find($id);
+            // Never reveal the tracking number of a document the user may not view.
+            if ($document === null || !$this->policy->canView($user, $document, $this->movements->routeDepartmentIds($id))) {
+                $result['failed']["Document #$id"] = 'This document is not available to your department.';
+                continue;
+            }
+            $trackingNo = (string) $document['tracking_no'];
             try {
                 $this->receive($id, $user, $receiptNote, 'bulk');
                 $result['received'][] = $trackingNo;

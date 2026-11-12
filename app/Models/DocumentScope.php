@@ -104,9 +104,12 @@ final class DocumentScope
      */
     public static function accessibleTo(int $departmentId): array
     {
+        // Two uncorrelated IN lists (each resolved once via the from/to department indexes)
+        // instead of a per-document EXISTS probe.
         return [
-            '(d.origin_department_id = ? OR d.current_department_id = ? OR EXISTS (
-                SELECT 1 FROM document_movements r WHERE r.document_id = d.id AND (r.from_department_id = ? OR r.to_department_id = ?)))',
+            '(d.origin_department_id = ? OR d.current_department_id = ?
+              OR d.id IN (SELECT r1.document_id FROM document_movements r1 WHERE r1.from_department_id = ?)
+              OR d.id IN (SELECT r2.document_id FROM document_movements r2 WHERE r2.to_department_id = ?))',
             [$departmentId, $departmentId, $departmentId, $departmentId],
         ];
     }

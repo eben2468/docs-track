@@ -145,11 +145,7 @@ final class DocumentMovement extends Model
                     d.tracking_no, d.title, d.confidentiality, d.priority, d.current_department_id,
                     cd.name AS department_name, hu.full_name AS holder_name
              FROM documents d
-             JOIN document_movements m ON m.id = (
-                 SELECT x.id FROM document_movements x
-                 WHERE x.document_id = d.id AND x.status = \'received\'
-                 ORDER BY x.received_at DESC, x.id DESC LIMIT 1
-             )
+             JOIN document_movements m ON m.id = d.current_movement_id
              JOIN departments cd ON cd.id = d.current_department_id
              LEFT JOIN users hu ON hu.id = d.current_holder_id
              WHERE d.status = \'received\' AND m.due_date IS NOT NULL AND m.due_date < CURDATE()
@@ -173,19 +169,35 @@ final class DocumentMovement extends Model
      */
     public function recentForDepartment(int $departmentId, int $limit = 10): array
     {
+        $limit = max(1, min(100, $limit));
+        $activity = 'GREATEST(m.sent_at, COALESCE(m.received_at, m.sent_at), COALESCE(m.recalled_at, m.sent_at))';
+
+        // Pick the IDs from the movement table alone (two index lookups), then load names for those rows.
+        $ids = array_map('intval', array_column($this->db->fetchAll(
+            "SELECT id FROM (
+                 SELECT m.id, $activity AS activity_at FROM document_movements m WHERE m.from_department_id = ?
+                 UNION
+                 SELECT m.id, $activity AS activity_at FROM document_movements m WHERE m.to_department_id = ?
+             ) x ORDER BY activity_at DESC, id DESC LIMIT $limit",
+            [$departmentId, $departmentId]
+        ), 'id'));
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
         return $this->db->fetchAll(
             "SELECT m.id, m.document_id, m.action, m.status, m.sent_at, m.received_at, m.recalled_at,
-                    GREATEST(m.sent_at, COALESCE(m.received_at, m.sent_at), COALESCE(m.recalled_at, m.sent_at)) AS activity_at,
+                    $activity AS activity_at,
                     d.tracking_no, d.title, d.confidentiality, d.priority, d.status AS document_status,
                     fd.code AS from_code, td.code AS to_code, m.from_department_id, m.to_department_id
              FROM document_movements m
              JOIN documents d ON d.id = m.document_id
              JOIN departments fd ON fd.id = m.from_department_id
              JOIN departments td ON td.id = m.to_department_id
-             WHERE m.from_department_id = ? OR m.to_department_id = ?
-             ORDER BY activity_at DESC, m.id DESC
-             LIMIT " . max(1, min(100, $limit)),
-            [$departmentId, $departmentId]
+             WHERE m.id IN ($placeholders)
+             ORDER BY activity_at DESC, m.id DESC",
+            $ids
         );
     }
 
@@ -249,8 +261,7 @@ final class DocumentMovement extends Model
     public function lastReceivedFor(int $documentId): ?array
     {
         return $this->db->fetch(
-            "SELECT * FROM document_movements WHERE document_id = ? AND status = 'received'
-             ORDER BY received_at DESC, id DESC LIMIT 1",
+            'SELECT m.* FROM documents d JOIN document_movements m ON m.id = d.current_movement_id WHERE d.id = ?',
             [$documentId]
         );
     }

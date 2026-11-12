@@ -88,11 +88,16 @@ final class UserService
             }
 
             if ($newPassword !== null) {
+                $hash = password_hash($newPassword, PASSWORD_DEFAULT);
                 $this->users->update($id, [
-                    'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+                    'password_hash' => $hash,
                     'failed_attempts' => 0,
                     'locked_until' => null,
                 ]);
+                // The user's existing sessions end; an admin editing themselves stays signed in.
+                if ($id === Auth::id()) {
+                    Auth::refreshFingerprint($hash);
+                }
             }
 
             if ($changes !== [] || $newPassword !== null) {

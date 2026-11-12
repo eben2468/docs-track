@@ -183,7 +183,7 @@ final class MovementServiceTest extends DatabaseTestCase
 
         $this->assertCount(2, $result['received']);
         $this->assertCount(1, $result['failed']);
-        $this->assertStringContainsString('not sent to your department', (string) array_values($result['failed'])[0]);
+        $this->assertSame(['Document #' . $c => 'This document is not available to your department.'], $result['failed'], 'Does not reveal documents outside the route');
         $this->assertDocument($a, 'received', $this->bur);
         $this->assertDocument($c, 'in_transit', $this->reg);
         $this->assertSame('bulk', $this->db->fetchValue("SELECT receive_method FROM document_movements WHERE document_id = ? AND status = 'received'", [$a]));

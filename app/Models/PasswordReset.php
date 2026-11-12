@@ -43,6 +43,14 @@ final class PasswordReset extends Model
     }
 
     /**
+     * Delete tokens that expired more than $days days ago. Returns rows removed.
+     */
+    public function purgeExpired(int $days = 30): int
+    {
+        return $this->db->execute('DELETE FROM password_resets WHERE expires_at < (NOW() - INTERVAL ' . max(1, $days) . ' DAY)');
+    }
+
+    /**
      * Mark every unused token of a user as used (after a reset or a new request).
      */
     public function invalidateForUser(int $userId): int

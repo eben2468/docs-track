@@ -41,6 +41,68 @@ final class AuditLog extends Model
     }
 
     /**
+     * Filtered, paginated log for the admin viewer (FR-13).
+     *
+     * @param array<string, string> $filters action, user (name/email/staff ID), document (tracking no.), ip, from, to (Y-m-d)
+     * @return array{data: list<array<string, mixed>>, total: int, page: int, per_page: int, last_page: int}
+     */
+    public function search(array $filters, int $page, int $perPage = 50): array
+    {
+        $where = [];
+        $bindings = [];
+
+        if (($filters['action'] ?? '') !== '') {
+            if (str_ends_with($filters['action'], '.*')) {
+                $where[] = 'a.action LIKE ?';
+                $bindings[] = addcslashes(substr($filters['action'], 0, -1), '%_\\') . '%';
+            } else {
+                $where[] = 'a.action = ?';
+                $bindings[] = $filters['action'];
+            }
+        }
+        if (($filters['user'] ?? '') !== '') {
+            $where[] = '(u.full_name LIKE ? OR u.email LIKE ? OR u.staff_id LIKE ?)';
+            array_push($bindings, self::likeTerm($filters['user']), self::likeTerm($filters['user']), self::likeTerm($filters['user']));
+        }
+        if (($filters['document'] ?? '') !== '') {
+            $where[] = 'd.tracking_no LIKE ?';
+            $bindings[] = self::likeTerm($filters['document']);
+        }
+        if (($filters['ip'] ?? '') !== '') {
+            $where[] = 'a.ip_address LIKE ?';
+            $bindings[] = addcslashes(trim($filters['ip']), '%_\\') . '%';
+        }
+        foreach (['from' => '>=', 'to' => '<'] as $key => $op) {
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($filters[$key] ?? ''));
+            if ($date !== false && $date->format('Y-m-d') === ($filters[$key] ?? '')) {
+                $where[] = "a.created_at $op ?";
+                $bindings[] = ($key === 'to' ? $date->modify('+1 day') : $date)->format('Y-m-d H:i:s');
+            }
+        }
+
+        return $this->paginateSql(
+            'a.id, a.action, a.details, a.ip_address, a.user_agent, a.created_at, a.user_id, a.document_id,
+             u.full_name AS user_name, u.staff_id, d.tracking_no',
+            'FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id LEFT JOIN documents d ON d.id = a.document_id'
+                . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where)),
+            $bindings,
+            'a.id DESC',
+            $page,
+            $perPage
+        );
+    }
+
+    /**
+     * Every action name that has been logged, alphabetically (for the filter list).
+     *
+     * @return list<string>
+     */
+    public function distinctActions(): array
+    {
+        return array_column($this->db->fetchAll('SELECT DISTINCT action FROM audit_logs ORDER BY action'), 'action');
+    }
+
+    /**
      * Most recent entries with user and document names (admin activity feed).
      *
      * @param list<string>|null $actionPrefixes Only actions starting with these, e.g. ['document.', 'user.']

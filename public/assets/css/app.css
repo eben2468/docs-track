@@ -437,6 +437,22 @@
 
 .activity-feed { max-height: 460px; overflow-y: auto; }
 
+/* ---------- Audit logs (FR-13) ---------- */
+
+.audit-details { min-width: 6rem; }
+
+.audit-details pre {
+    max-width: 28rem;
+    max-height: 16rem;
+    overflow: auto;
+    padding: .5rem;
+    font-size: .75rem;
+    background: var(--bs-tertiary-bg);
+    border-radius: .25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* ---------- Notifications (FR-9) ---------- */
 
 .notif-badge {

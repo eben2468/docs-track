@@ -1,0 +1,18 @@
+# Normalise line endings: the app is deployed on Linux, and shell scripts break with CRLF.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.bat  text eol=crlf
+
+# Binary files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+*.docx binary
+*.xlsx binary

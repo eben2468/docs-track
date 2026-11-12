@@ -483,6 +483,14 @@ CREATE TABLE login_throttle (
 );
 ```
 
+**Implementation note (Phase 8, performance):** `documents.current_movement_id` (nullable FK to
+`document_movements.id`) points at the movement that brought the document to its current holder
+(the last *received* movement). `MovementService::receive()` sets it in the same transaction. It
+replaces a per-row "latest received movement" subquery in lists, dashboards and alerts. Migration
+`016` adds it (with a backfill) plus indexes on `document_movements (document_id, status)`,
+`(status, sent_at)`, `documents (origin_department_id, created_at)`, `(status, completed_at)` and
+`notifications (user_id, created_at)`.
+
 ### 8.1 Seed data
 - **Departments (sample):** Office of the Vice-Chancellor (VC), Registry (REG), Bursary/Finance (BUR), Human Resources (HR), Admissions (ADM), Academic Affairs (ACA), Faculty of Science (FOS), Faculty of Business (FOB), ICT Directorate (ICT), Library (LIB), Chaplaincy (CHP), Students' Affairs (SAF). Edit these to match VVU's actual structure.
 - **Document types:** Memo (3), Letter (3), Payment Voucher (2), Transcript Request (5), Leave Request (2), Contract (5), Student Petition (5), Other (3).

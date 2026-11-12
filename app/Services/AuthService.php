@@ -83,7 +83,7 @@ final class AuthService
         }
         $this->users->update((int) $user['id'], $update);
 
-        Auth::login((int) $user['id']);
+        Auth::login((int) $user['id'], (string) ($update['password_hash'] ?? $user['password_hash']));
         $this->audit->log('login', [], null, (int) $user['id']);
 
         return $user;

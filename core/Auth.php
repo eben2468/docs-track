@@ -14,6 +14,8 @@ final class Auth
 {
     public const SESSION_KEY = 'auth_user_id';
 
+    private const FINGERPRINT_KEY = 'auth_fp';
+
     /** @var array<string, mixed>|null */
     private static ?array $user = null;
 
@@ -42,6 +44,9 @@ final class Auth
     /**
      * The logged-in, active user's row (without the password hash), or null.
      *
+     * The session also holds a fingerprint of the password hash taken at sign-in, so
+     * changing or resetting the password ends every other session of that account.
+     *
      * @return array<string, mixed>|null
      */
     public static function user(): ?array
@@ -57,24 +62,50 @@ final class Auth
         }
 
         $user = Database::instance()->fetch(
-            'SELECT id, staff_id, full_name, email, phone, role, department_id, is_active
+            'SELECT id, staff_id, full_name, email, phone, role, department_id, is_active, password_hash
              FROM users WHERE id = ? AND is_active = 1',
             [$id]
         );
+        if ($user === null) {
+            return self::$user = null;
+        }
+
+        $fingerprint = Session::get(self::FINGERPRINT_KEY);
+        if (!is_string($fingerprint) || !hash_equals(self::fingerprint((string) $user['password_hash']), $fingerprint)) {
+            return self::$user = null;
+        }
+        unset($user['password_hash']);
 
         return self::$user = $user;
     }
 
     /**
-     * Mark a user as logged in: new session ID and CSRF token (prevents fixation).
+     * Mark a user as logged in: new session ID and CSRF token (prevents fixation), and
+     * remember a fingerprint of their current password hash.
      * Credential checks, throttling and auditing happen in AuthService.
      */
-    public static function login(int $userId): void
+    public static function login(int $userId, string $passwordHash): void
     {
         Session::regenerate();
         Csrf::regenerate();
         Session::put(self::SESSION_KEY, $userId);
+        Session::put(self::FINGERPRINT_KEY, self::fingerprint($passwordHash));
         self::forgetCachedUser();
+    }
+
+    /**
+     * Keep the current session valid after the signed-in user's own password changed
+     * (all their other sessions still end).
+     */
+    public static function refreshFingerprint(string $newPasswordHash): void
+    {
+        Session::put(self::FINGERPRINT_KEY, self::fingerprint($newPasswordHash));
+        self::forgetCachedUser();
+    }
+
+    private static function fingerprint(string $passwordHash): string
+    {
+        return hash('sha256', 'session-fp|' . $passwordHash);
     }
 
     /**

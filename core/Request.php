@@ -172,10 +172,11 @@ final class Request
 
     public function isSecure(): bool
     {
+        // Only the web server's own HTTPS flag is trusted; X-Forwarded-Proto can be forged by
+        // clients. Behind a TLS-terminating proxy, have Nginx set "fastcgi_param HTTPS on".
         $https = $this->server['HTTPS'] ?? '';
 
-        return ($https !== '' && $https !== 'off')
-            || ($this->server['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        return $https !== '' && $https !== 'off';
     }
 
     /**

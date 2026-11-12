@@ -1,0 +1,15 @@
+# VVU DTS scheduled jobs. Install for the site user (CloudPanel: Site → Cron Jobs, one
+# entry per line below; or `crontab -u vvu-dts -e`). Adjust APP to the project folder.
+# Times are server time; set the server to Africa/Accra (timedatectl set-timezone Africa/Accra).
+
+APP=/home/vvu-dts/htdocs/dts.vvu.edu.gh
+PHP=/usr/bin/php8.3
+
+# Send queued emails every 2 minutes.
+*/2 * * * *  cd $APP && $PHP cron/send_emails.php  >> storage/logs/cron.log 2>&1
+
+# Unreceived / overdue alerts every 30 minutes (also purges old rate-limit rows).
+*/30 * * * * cd $APP && $PHP cron/check_alerts.php >> storage/logs/cron.log 2>&1
+
+# Daily backup at 02:15: database dump + uploads archive, keeping 14 days.
+15 2 * * *   $APP/deploy/backup.sh >> $APP/storage/logs/backup.log 2>&1

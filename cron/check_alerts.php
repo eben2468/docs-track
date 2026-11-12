@@ -19,6 +19,8 @@ if (PHP_SAPI !== 'cli') {
 $basePath = dirname(__DIR__);
 require $basePath . '/vendor/autoload.php';
 
+use App\Models\LoginThrottle;
+use App\Models\PasswordReset;
 use App\Services\AlertService;
 use Core\App;
 use Core\Logger;
@@ -26,6 +28,9 @@ use Core\Logger;
 try {
     (new App($basePath))->bootstrap();
     $result = (new AlertService())->run();
+
+    // Housekeeping: rate-limit hits older than a day and long-expired reset tokens.
+    $purged = (new LoginThrottle())->purgeOlderThan(24) + (new PasswordReset())->purgeExpired(30);
 
     echo '[' . date('Y-m-d H:i:s') . '] ' . ($result['locked']
         ? 'Another check_alerts run is in progress; skipped.'
@@ -35,7 +40,7 @@ try {
             $result['escalated'],
             $result['overdue'],
             $result['notified']
-        )) . PHP_EOL;
+        )) . ($purged > 0 ? " Purged $purged old throttle/reset row(s)." : '') . PHP_EOL;
 } catch (Throwable $e) {
     Logger::exception($e);
     fwrite(STDERR, '[' . date('Y-m-d H:i:s') . '] ERROR: ' . $e->getMessage() . PHP_EOL);

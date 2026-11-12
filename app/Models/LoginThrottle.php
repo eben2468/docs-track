@@ -41,6 +41,14 @@ final class LoginThrottle extends Model
         return max(1, (int) ceil($seconds / 60));
     }
 
+    /**
+     * Delete hits older than $hours (no window is longer than an hour). Returns rows removed.
+     */
+    public function purgeOlderThan(int $hours = 24): int
+    {
+        return $this->db->execute('DELETE FROM login_throttle WHERE created_at < (NOW() - INTERVAL ' . max(1, $hours) . ' HOUR)');
+    }
+
     public function record(string $ip, string $scope): void
     {
         $this->insert(['ip_address' => $ip, 'scope' => $scope]);

@@ -36,7 +36,7 @@ $adminMenu = [
     ['Document Types', 'tags', '/admin/document-types'],
     ['Holidays', 'calendar-event', '/admin/holidays'],
     ['Settings', 'gear', '/admin/settings'],
-    ['Audit Logs', 'shield-check', null],
+    ['Audit Logs', 'shield-check', '/admin/audit-logs'],
 ];
 $isActive = static function (string $itemPath) use ($path, $currentTab): bool {
     if (str_contains($itemPath, '?tab=')) {

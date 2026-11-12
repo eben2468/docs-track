@@ -75,9 +75,15 @@ final class App
 
         Session::start((array) Config::get('app.session', []));
 
-        $this->handle($request)
-            ->withSecurityHeaders($request->isSecure())
-            ->send();
+        $response = $this->handle($request)->withSecurityHeaders($request->isSecure());
+
+        // Pages shown to a signed-in user must not be stored by the browser or proxies,
+        // so they cannot be reopened with the Back button after signing out.
+        if (!$response->hasHeader('Cache-Control') && Session::get(Auth::SESSION_KEY) !== null) {
+            $response->header('Cache-Control', 'private, no-store, max-age=0');
+        }
+
+        $response->send();
     }
 
     /**

@@ -54,10 +54,13 @@ final class ProfileService
             throw new ServiceException('The new password must be different from your current password.', 'password');
         }
 
-        $this->users->update($userId, ['password_hash' => password_hash($new, PASSWORD_DEFAULT)]);
+        $hash = password_hash($new, PASSWORD_DEFAULT);
+        $this->users->update($userId, ['password_hash' => $hash]);
         $this->audit->log('password.changed');
 
+        // New session ID for this browser; every other session of this account ends.
         Session::regenerate();
         Csrf::regenerate();
+        Auth::refreshFingerprint($hash);
     }
 }

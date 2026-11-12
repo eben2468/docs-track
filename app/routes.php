@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Admin\AuditLogController;
 use App\Controllers\Admin\DepartmentController;
 use App\Controllers\Admin\DocumentTypeController;
 use App\Controllers\Admin\HolidayController;
@@ -135,6 +136,8 @@ return static function (Router $router): void {
                 $router->get('/settings', [SettingController::class, 'edit']);
                 $router->post('/settings', [SettingController::class, 'update']);
                 $router->post('/settings/test-email', [SettingController::class, 'testEmail']);
+
+                $router->get('/audit-logs', [AuditLogController::class, 'index']);
             });
         });
     });

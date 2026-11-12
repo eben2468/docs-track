@@ -29,11 +29,14 @@ final class Session
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
 
-        session_name((string) ($config['name'] ?? 'app_session'));
+        $secure = (bool) ($config['secure'] ?? false);
+        // "__Host-" cookies are only accepted over HTTPS, for this exact host and path "/",
+        // which stops subdomains from setting or overwriting the session cookie.
+        session_name(($secure ? '__Host-' : '') . (string) ($config['name'] ?? 'app_session'));
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => '/',
-            'secure' => (bool) ($config['secure'] ?? false),
+            'secure' => $secure,
             'httponly' => true,
             'samesite' => (string) ($config['same_site'] ?? 'Lax'),
         ]);

@@ -123,12 +123,17 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
         }
         $line(sprintf('  Document types  %d inserted, %d already present', $inserted, count($types) - $inserted));
 
-        // Users: 1 admin + 1 HOD and 2 staff in REG, BUR and ICT. Dev-only password.
+        // Users: 1 admin + 1 HOD and 2 staff in REG, BUR and ICT. Dev-only password, so never
+        // created in production (use database/create_admin.php there).
         $deptIds = array_column($db->fetchAll('SELECT id, code FROM departments'), 'id', 'code');
+        $production = config('app.env') === 'production';
+        if ($production) {
+            $line('  Users           skipped in production (run database/create_admin.php)');
+        }
         $passwordHash = password_hash('ChangeMe@123', PASSWORD_DEFAULT);
 
-        $users = [['VVU-0001', 'System Administrator', 'admin@vvu.test', 'admin', 'ICT']];
-        foreach (['REG' => [1, 'Registry'], 'BUR' => [2, 'Bursary'], 'ICT' => [3, 'ICT']] as $code => [$n, $label]) {
+        $users = $production ? [] : [['VVU-0001', 'System Administrator', 'admin@vvu.test', 'admin', 'ICT']];
+        foreach ($production ? [] : ['REG' => [1, 'Registry'], 'BUR' => [2, 'Bursary'], 'ICT' => [3, 'ICT']] as $code => [$n, $label]) {
             $prefix = strtolower($code);
             $users[] = [sprintf('VVU-%d001', $n), "$label HOD", "$prefix.hod@vvu.test", 'hod', $code];
             $users[] = [sprintf('VVU-%d002', $n), "$label Staff 1", "$prefix.staff1@vvu.test", 'staff', $code];
@@ -145,16 +150,18 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
                 'department_id' => $deptIds[$deptCode],
             ]);
         }
-        $line(sprintf('  Users           %d inserted, %d already present', $inserted, count($users) - $inserted));
+        if (!$production) {
+            $line(sprintf('  Users           %d inserted, %d already present', $inserted, count($users) - $inserted));
 
-        // Set each seeded HOD as head of their department, unless a head is already set.
-        $heads = $db->execute(
-            "UPDATE departments d
-               JOIN users u ON u.department_id = d.id AND u.role = 'hod' AND u.email = CONCAT(LOWER(d.code), '.hod@vvu.test')
-                SET d.head_user_id = u.id
-              WHERE d.head_user_id IS NULL"
-        );
-        $line(sprintf('  Department HODs %d assigned', $heads));
+            // Set each seeded HOD as head of their department, unless a head is already set.
+            $heads = $db->execute(
+                "UPDATE departments d
+                   JOIN users u ON u.department_id = d.id AND u.role = 'hod' AND u.email = CONCAT(LOWER(d.code), '.hod@vvu.test')
+                    SET d.head_user_id = u.id
+                  WHERE d.head_user_id IS NULL"
+            );
+            $line(sprintf('  Department HODs %d assigned', $heads));
+        }
 
         // Settings (FR-15 defaults).
         $settings = [
