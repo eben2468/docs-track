@@ -13,7 +13,7 @@ final class User extends Model
 
     /** @var list<string> */
     protected array $fillable = [
-        'staff_id', 'full_name', 'email', 'phone', 'password_hash', 'role', 'department_id',
+        'staff_id', 'username', 'full_name', 'email', 'phone', 'password_hash', 'role', 'department_id',
         'is_active', 'failed_attempts', 'locked_until', 'last_login_at',
     ];
 
@@ -28,15 +28,13 @@ final class User extends Model
     }
 
     /**
-     * Find a user by email address or staff ID (login form accepts either).
+     * Find a user by username (case-insensitive under utf8mb4_unicode_ci).
      *
      * @return array<string, mixed>|null
      */
-    public function findByLogin(string $login): ?array
+    public function findByUsername(string $username): ?array
     {
-        $login = trim($login);
-
-        return $this->db->fetch('SELECT * FROM users WHERE email = ? OR staff_id = ? LIMIT 1', [$login, $login]);
+        return $this->first(['username' => trim($username)]);
     }
 
     /**
@@ -49,8 +47,8 @@ final class User extends Model
         $where = [];
         $bindings = [];
         if ($q !== '') {
-            $where[] = '(u.full_name LIKE ? OR u.email LIKE ? OR u.staff_id LIKE ?)';
-            array_push($bindings, self::likeTerm($q), self::likeTerm($q), self::likeTerm($q));
+            $where[] = '(u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.staff_id LIKE ?)';
+            array_push($bindings, ...array_fill(0, 4, self::likeTerm($q)));
         }
         if ($departmentId !== null) {
             $where[] = 'u.department_id = ?';
@@ -71,7 +69,7 @@ final class User extends Model
             . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where));
 
         return $this->paginateSql(
-            'u.id, u.staff_id, u.full_name, u.email, u.phone, u.role, u.is_active, u.locked_until,
+            'u.id, u.staff_id, u.username, u.full_name, u.email, u.phone, u.role, u.is_active, u.locked_until,
              u.last_login_at, d.name AS department_name, d.code AS department_code',
             $fromWhere,
             $bindings,

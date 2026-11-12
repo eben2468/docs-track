@@ -78,7 +78,7 @@ final class ModelAndMigratorTest extends TestCase
     {
         $files = glob(dirname(__DIR__, 2) . '/database/migrations/*.sql') ?: [];
 
-        $this->assertCount(16, $files);
+        $this->assertCount(17, $files);
         foreach ($files as $file) {
             $this->assertNotEmpty(Migrator::splitStatements((string) file_get_contents($file)), basename($file));
         }

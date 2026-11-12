@@ -288,6 +288,24 @@
         });
     });
 
+    /* Disable a button for N seconds with a live countdown: <button data-countdown="45">. */
+    document.querySelectorAll('[data-countdown]').forEach(function (button) {
+        var left = parseInt(button.getAttribute('data-countdown'), 10) || 0;
+        var label = button.textContent.trim();
+        var tick = function () {
+            if (left <= 0) {
+                button.disabled = false;
+                button.textContent = label;
+                return;
+            }
+            button.disabled = true;
+            button.textContent = label + ' (' + left + 's)';
+            left -= 1;
+            window.setTimeout(tick, 1000);
+        };
+        tick();
+    });
+
     /* Colour pickers: show the hex value next to the swatch. */
     document.querySelectorAll('input[type="color"]').forEach(function (input) {
         var label = input.parentElement.querySelector('[data-color-value]');

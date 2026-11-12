@@ -392,8 +392,8 @@ final class MovementServiceTest extends DatabaseTestCase
     private function createUser(string $key, int $departmentId, string $role): array
     {
         $this->db->execute(
-            'INSERT INTO users (staff_id, full_name, email, password_hash, role, department_id) VALUES (?, ?, ?, ?, ?, ?)',
-            ["T-$key", ucfirst($key) . ' User', "$key@test.local", 'x', $role, $departmentId]
+            'INSERT INTO users (staff_id, username, full_name, email, password_hash, role, department_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            ["T-$key", "t-$key", ucfirst($key) . ' User', "$key@test.local", 'x', $role, $departmentId]
         );
 
         return (new User())->find($this->db->lastInsertId());

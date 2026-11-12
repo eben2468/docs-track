@@ -17,39 +17,42 @@ final class UserService
     public function __construct(
         private readonly User $users = new User(),
         private readonly Department $departments = new Department(),
-        private readonly PasswordResetService $passwords = new PasswordResetService(),
+        private readonly MailService $mail = new MailService(),
         private readonly AuditService $audit = new AuditService(),
     ) {
     }
 
     /**
-     * Create a user. With no password given, a random one is set and a
-     * "set your password" link is emailed. Returns the new user's ID.
+     * Create a user and queue a welcome email with their username. Users sign in with
+     * a one-time code emailed to them, so there is no password to set. The stored
+     * password_hash is a random secret used only to fingerprint sessions. Returns the new ID.
      *
-     * @param array{staff_id: string, full_name: string, email: string, phone: ?string, department_id: int, role: string} $data
+     * @param array{staff_id: string, username: string, full_name: string, email: string, phone: ?string, department_id: int, role: string} $data
      */
-    public function create(array $data, ?string $password, string $source = 'form'): int
+    public function create(array $data, string $source = 'form'): int
     {
         $this->assertActiveDepartment($data['department_id']);
 
-        return Database::instance()->transaction(function () use ($data, $password, $source): int {
+        return Database::instance()->transaction(function () use ($data, $source): int {
             $id = $this->users->insert($data + [
-                'password_hash' => password_hash($password ?? bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
+                'password_hash' => password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
                 'is_active' => 1,
             ]);
 
-            if ($password === null) {
-                $this->passwords->sendLink(['id' => $id] + $data, 'welcome');
-            }
+            $this->mail->queueView($data['email'], 'Your account on ' . setting('app_name'), 'emails/welcome', [
+                'name' => $data['full_name'],
+                'username' => $data['username'],
+                'link' => url('/login'),
+            ]);
 
             $this->audit->log('user.created', [
                 'user_id' => $id,
                 'staff_id' => $data['staff_id'],
+                'username' => $data['username'],
                 'email' => $data['email'],
                 'role' => $data['role'],
                 'department_id' => $data['department_id'],
                 'source' => $source,
-                'welcome_email' => $password === null,
             ]);
 
             return $id;
@@ -57,13 +60,13 @@ final class UserService
     }
 
     /**
-     * Update a user's details, and optionally set a new password.
+     * Update a user's details (including their username).
      *
-     * @param array{staff_id: string, full_name: string, email: string, phone: ?string, department_id: int, role: string} $data
+     * @param array{staff_id: string, username: string, full_name: string, email: string, phone: ?string, department_id: int, role: string} $data
      */
-    public function update(int $id, array $data, ?string $newPassword): void
+    public function update(int $id, array $data): void
     {
-        Database::instance()->transaction(function () use ($id, $data, $newPassword): void {
+        Database::instance()->transaction(function () use ($id, $data): void {
             $before = $this->users->find($id) ?? throw new ServiceException('User not found.');
 
             if ($id === Auth::id() && $data['role'] !== $before['role']) {
@@ -87,25 +90,8 @@ final class UserService
                 }
             }
 
-            if ($newPassword !== null) {
-                $hash = password_hash($newPassword, PASSWORD_DEFAULT);
-                $this->users->update($id, [
-                    'password_hash' => $hash,
-                    'failed_attempts' => 0,
-                    'locked_until' => null,
-                ]);
-                // The user's existing sessions end; an admin editing themselves stays signed in.
-                if ($id === Auth::id()) {
-                    Auth::refreshFingerprint($hash);
-                }
-            }
-
-            if ($changes !== [] || $newPassword !== null) {
-                $this->audit->log('user.updated', array_filter([
-                    'user_id' => $id,
-                    'changes' => $changes,
-                    'password_set' => $newPassword !== null ?: null,
-                ]));
+            if ($changes !== []) {
+                $this->audit->log('user.updated', ['user_id' => $id, 'changes' => $changes]);
             }
         });
 
@@ -152,18 +138,6 @@ final class UserService
         $this->audit->log('user.unlocked', ['user_id' => $id, 'staff_id' => $user['staff_id']]);
     }
 
-    /**
-     * Email the user a fresh "set your password" link.
-     */
-    public function sendPasswordLink(int $id): void
-    {
-        $user = $this->users->find($id) ?? throw new ServiceException('User not found.');
-        if ((int) $user['is_active'] !== 1) {
-            throw new ServiceException('Activate the account before sending a password link.');
-        }
-        $this->passwords->sendLink($user, 'reset');
-        $this->audit->log('user.password_link_sent', ['user_id' => $id]);
-    }
 
     private function assertActiveDepartment(int $departmentId): void
     {

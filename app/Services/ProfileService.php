@@ -6,11 +6,9 @@ namespace App\Services;
 
 use App\Models\User;
 use Core\Auth;
-use Core\Csrf;
-use Core\Session;
 
 /**
- * A user's own profile: contact details and password (FR-1).
+ * A user's own profile: contact details (FR-1).
  */
 final class ProfileService
 {
@@ -38,29 +36,4 @@ final class ProfileService
         Auth::forgetCachedUser();
     }
 
-    /**
-     * Change the password after confirming the current one. Issues a new session ID.
-     *
-     * @throws ServiceException when the current password is wrong or the new one is unchanged
-     */
-    public function changePassword(int $userId, string $current, string $new): void
-    {
-        $user = $this->users->find($userId) ?? throw new ServiceException('Account not found.');
-
-        if (!password_verify($current, (string) $user['password_hash'])) {
-            throw new ServiceException('Your current password is incorrect.', 'current_password');
-        }
-        if (password_verify($new, (string) $user['password_hash'])) {
-            throw new ServiceException('The new password must be different from your current password.', 'password');
-        }
-
-        $hash = password_hash($new, PASSWORD_DEFAULT);
-        $this->users->update($userId, ['password_hash' => $hash]);
-        $this->audit->log('password.changed');
-
-        // New session ID for this browser; every other session of this account ends.
-        Session::regenerate();
-        Csrf::regenerate();
-        Auth::refreshFingerprint($hash);
-    }
 }

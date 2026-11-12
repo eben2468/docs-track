@@ -19,10 +19,10 @@ final class Phase2LogicTest extends TestCase
 {
     public function testCsvParseNormalisesValuesAndIgnoresColumnOrderBomAndBlankLines(): void
     {
-        $csv = "\xEF\xBB\xBFRole,Email,staff_id,full_name,phone,department_code\r\n"
-            . " , A@x.test , S1 , Ama , , reg \r\n"
+        $csv = "\xEF\xBB\xBFRole,Email,staff_id,Username,full_name,phone,department_code\r\n"
+            . " , A@x.test , S1 , Ama.M , Ama , , reg \r\n"
             . "\r\n"
-            . "HOD,b@x.test,S2,Kofi,024,BUR\r\n";
+            . "HOD,b@x.test,S2,kofi,Kofi,024,BUR\r\n";
 
         $rows = UserImportService::parse($csv);
 
@@ -30,7 +30,7 @@ final class Phase2LogicTest extends TestCase
         $this->assertSame(2, $rows[0]['line']);
         $this->assertSame(4, $rows[1]['line']);
         $this->assertSame(
-            ['staff_id' => 'S1', 'full_name' => 'Ama', 'email' => 'A@x.test', 'phone' => '', 'department_code' => 'REG', 'role' => 'staff'],
+            ['staff_id' => 'S1', 'username' => 'ama.m', 'full_name' => 'Ama', 'email' => 'A@x.test', 'phone' => '', 'department_code' => 'REG', 'role' => 'staff'],
             $rows[0]['data']
         );
         $this->assertSame('hod', $rows[1]['data']['role']);
@@ -39,7 +39,7 @@ final class Phase2LogicTest extends TestCase
     public function testCsvParseRejectsMissingColumns(): void
     {
         $this->expectException(ServiceException::class);
-        $this->expectExceptionMessage('Missing column(s): phone, department_code, role');
+        $this->expectExceptionMessage('Missing column(s): username, phone, department_code, role');
         UserImportService::parse("staff_id,full_name,email\nS1,Ama,a@x.test\n");
     }
 
@@ -52,25 +52,32 @@ final class Phase2LogicTest extends TestCase
     public function testCsvRowChecksReportEveryProblem(): void
     {
         $rows = UserImportService::parse(
-            "staff_id,full_name,email,phone,department_code,role\n"
-            . "S1,Ama,ama@x.test,,REG,staff\n"          // ok
-            . "OLD1,Kofi,taken@x.test,abc,XYZ,boss\n"   // taken staff ID + email, bad phone, unknown dept, bad role
-            . "S1,Yaw,ama@x.test,,REG,staff\n"          // repeats line 2
-            . ",,,,,\n"                                 // blank: skipped
-            . ",Esi,not-an-email,,REG,\n"               // missing staff ID, bad email
+            "staff_id,username,full_name,email,phone,department_code,role\n"
+            . "S1,ama,Ama,ama@x.test,,REG,staff\n"           // ok
+            . "OLD1,kofi,Kofi,taken@x.test,abc,XYZ,boss\n"   // taken username + staff ID + email, bad phone, unknown dept, bad role
+            . "S1,AMA,Yaw,ama@x.test,,REG,staff\n"           // repeats line 2
+            . ",,,,,,\n"                                     // blank: skipped
+            . ",e s,Esi,not-an-email,,REG,\n"                // missing staff ID, bad username, bad email
         );
 
-        $checked = UserImportService::checkRows($rows, ['taken@x.test' => true], ['old1' => true], ['REG' => 1]);
+        $existing = ['username' => ['kofi' => true], 'email' => ['taken@x.test' => true], 'staff_id' => ['old1' => true]];
+        $checked = UserImportService::checkRows($rows, $existing, ['REG' => 1]);
 
         $this->assertSame([], $checked[0]['errors']);
         $this->assertSame([
             'Phone format is invalid.',
             'Role is not a valid choice.',
+            'Username is already used by an existing user.',
             'Email is already used by an existing user.',
             'Staff ID is already used by an existing user.',
             'Department code "XYZ" does not match an active department.',
         ], $checked[1]['errors']);
-        $this->assertSame(['Email is repeated (also on line 2).', 'Staff ID is repeated (also on line 2).'], $checked[2]['errors']);
+        $this->assertSame([
+            'Username is repeated (also on line 2).',
+            'Email is repeated (also on line 2).',
+            'Staff ID is repeated (also on line 2).',
+        ], $checked[2]['errors']);
+        $this->assertContains('Username format is invalid.', $checked[3]['errors']);
         $this->assertSame(6, $checked[3]['line']);
         $this->assertContains('Staff id is required.', $checked[3]['errors']);
         $this->assertContains('Email must be a valid email address.', $checked[3]['errors']);

@@ -40,7 +40,8 @@
                     <li><code>department_code</code> must match an active department (e.g. REG).</li>
                     <li><code>role</code> is <code>staff</code>, <code>hod</code> or <code>admin</code> (blank = staff).</li>
                     <li>If any row has a problem, <strong>nothing is imported</strong>; you get a report to fix the file.</li>
-                    <li>Each imported user is emailed a link to set their own password.</li>
+                    <li><code>username</code> is what the user signs in with: letters, numbers, dots, hyphens and underscores.</li>
+                    <li>Each imported user is emailed their username and how to sign in.</li>
                 </ul>
                 <a class="btn btn-sm btn-outline-secondary" href="<?= e(url('/admin/users/import/template')) ?>">
                     <i class="bi bi-download" aria-hidden="true"></i> Download template
@@ -59,6 +60,7 @@
                 <tr>
                     <th scope="col">Line</th>
                     <th scope="col">Staff ID</th>
+                    <th scope="col">Username</th>
                     <th scope="col">Name</th>
                     <th scope="col">Email</th>
                     <th scope="col">Dept</th>
@@ -71,6 +73,7 @@
                     <tr class="<?= $row['errors'] === [] ? '' : 'table-danger' ?>">
                         <td><?= e($row['line']) ?></td>
                         <td class="font-monospace"><?= e($row['data']['staff_id']) ?></td>
+                        <td class="font-monospace"><?= e($row['data']['username']) ?></td>
                         <td><?= e($row['data']['full_name']) ?></td>
                         <td><?= e($row['data']['email']) ?></td>
                         <td><?= e($row['data']['department_code']) ?></td>

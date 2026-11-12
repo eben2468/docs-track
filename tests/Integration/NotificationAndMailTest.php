@@ -254,8 +254,8 @@ final class NotificationAndMailTest extends DatabaseTestCase
     private function user(string $key, int $dept, bool $active = true): array
     {
         $this->db->execute(
-            'INSERT INTO users (staff_id, full_name, email, password_hash, role, department_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ["N-$key", ucfirst($key), "$key@n.local", 'x', 'staff', $dept, $active ? 1 : 0]
+            'INSERT INTO users (staff_id, username, full_name, email, password_hash, role, department_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            ["N-$key", "n-$key", ucfirst($key), "$key@n.local", 'x', 'staff', $dept, $active ? 1 : 0]
         );
 
         return (new User())->find($this->db->lastInsertId());

@@ -21,7 +21,6 @@ use App\Controllers\TrackController;
 use App\Controllers\DashboardController;
 use App\Controllers\MovementController;
 use App\Controllers\NotificationController;
-use App\Controllers\PasswordResetController;
 use App\Controllers\ProfileController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
@@ -46,6 +45,7 @@ return static function (Router $router): void {
         // Public branding assets (used on the login page too).
         $router->get('/branding/theme', [BrandingController::class, 'theme']);
         $router->get('/branding/logo', [BrandingController::class, 'logo']);
+        $router->get('/branding/favicon', [BrandingController::class, 'favicon']);
 
         // Public tracking (FR-14) — also the URL encoded in every QR label.
         $router->get('/track', [TrackController::class, 'index']);
@@ -54,11 +54,10 @@ return static function (Router $router): void {
         // Guests only.
         $router->group(['middleware' => ['guest']], static function (Router $router): void {
             $router->get('/login', [AuthController::class, 'showLogin']);
-            $router->post('/login', [AuthController::class, 'login']);
-            $router->get('/forgot-password', [PasswordResetController::class, 'showForgot']);
-            $router->post('/forgot-password', [PasswordResetController::class, 'sendLink']);
-            $router->get('/reset-password/{token:[a-f0-9]+}', [PasswordResetController::class, 'showReset']);
-            $router->post('/reset-password/{token:[a-f0-9]+}', [PasswordResetController::class, 'reset']);
+            $router->post('/login', [AuthController::class, 'sendCode']);
+            $router->get('/login/verify', [AuthController::class, 'showVerify']);
+            $router->post('/login/verify', [AuthController::class, 'verify']);
+            $router->post('/login/resend', [AuthController::class, 'resend']);
         });
 
         // Signed-in users.
@@ -67,7 +66,6 @@ return static function (Router $router): void {
             $router->post('/logout', [AuthController::class, 'logout']);
             $router->get('/profile', [ProfileController::class, 'show']);
             $router->post('/profile', [ProfileController::class, 'updateDetails']);
-            $router->post('/profile/password', [ProfileController::class, 'updatePassword']);
 
             // Documents.
             $router->get('/documents', [DocumentListController::class, 'index']);
@@ -117,7 +115,6 @@ return static function (Router $router): void {
                 $router->post('/users/{id:\d+}', [UserController::class, 'update']);
                 $router->post('/users/{id:\d+}/status', [UserController::class, 'status']);
                 $router->post('/users/{id:\d+}/unlock', [UserController::class, 'unlock']);
-                $router->post('/users/{id:\d+}/password-link', [UserController::class, 'sendPasswordLink']);
 
                 $router->get('/document-types', [DocumentTypeController::class, 'index']);
                 $router->get('/document-types/create', [DocumentTypeController::class, 'create']);

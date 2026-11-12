@@ -123,14 +123,15 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
         }
         $line(sprintf('  Document types  %d inserted, %d already present', $inserted, count($types) - $inserted));
 
-        // Users: 1 admin + 1 HOD and 2 staff in REG, BUR and ICT. Dev-only password, so never
-        // created in production (use database/create_admin.php there).
+        // Users: 1 admin + 1 HOD and 2 staff in REG, BUR and ICT, with usernames taken from
+        // their email (admin, reg.hod, reg.staff1, ...). Dev-only accounts, so never created in
+        // production (use database/create_admin.php there). Sign-in codes go to the mail log.
         $deptIds = array_column($db->fetchAll('SELECT id, code FROM departments'), 'id', 'code');
         $production = config('app.env') === 'production';
         if ($production) {
             $line('  Users           skipped in production (run database/create_admin.php)');
         }
-        $passwordHash = password_hash('ChangeMe@123', PASSWORD_DEFAULT);
+        $passwordHash = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
 
         $users = $production ? [] : [['VVU-0001', 'System Administrator', 'admin@vvu.test', 'admin', 'ICT']];
         foreach ($production ? [] : ['REG' => [1, 'Registry'], 'BUR' => [2, 'Bursary'], 'ICT' => [3, 'ICT']] as $code => [$n, $label]) {
@@ -144,6 +145,7 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
             $inserted += $insertIfMissing($db, 'users', [
                 'email' => $email,
                 'staff_id' => $staffId,
+                'username' => strstr($email, '@', true),
                 'full_name' => $name,
                 'password_hash' => $passwordHash,
                 'role' => $role,

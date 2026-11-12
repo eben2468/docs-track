@@ -204,8 +204,8 @@ final class DocumentListingTest extends DatabaseTestCase
     private function user(string $key, int $dept, string $role): array
     {
         $this->db->execute(
-            'INSERT INTO users (staff_id, full_name, email, password_hash, role, department_id) VALUES (?, ?, ?, ?, ?, ?)',
-            ["L-$key", ucfirst($key), "$key@list.local", 'x', $role, $dept]
+            'INSERT INTO users (staff_id, username, full_name, email, password_hash, role, department_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            ["L-$key", "l-$key", ucfirst($key), "$key@list.local", 'x', $role, $dept]
         );
 
         return (new User())->find($this->db->lastInsertId());

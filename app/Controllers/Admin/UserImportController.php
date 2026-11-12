@@ -33,7 +33,7 @@ final class UserImportController extends Controller
         if ($result['imported'] > 0) {
             return Response::redirect('/admin/users')->with(
                 'success',
-                "{$result['imported']} user(s) imported. Each has been sent a \"set your password\" email."
+                "{$result['imported']} user(s) imported. Each has been emailed their username and sign-in instructions."
             );
         }
 

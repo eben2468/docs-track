@@ -12,7 +12,7 @@ use Core\Request;
 use Core\Response;
 
 /**
- * The logged-in user's profile and password (FR-1).
+ * The logged-in user's profile (FR-1).
  */
 final class ProfileController extends Controller
 {
@@ -41,25 +41,5 @@ final class ProfileController extends Controller
         }
 
         return Response::redirect('/profile')->with('success', 'Your profile has been updated.');
-    }
-
-    public function updatePassword(Request $request): Response
-    {
-        $this->validate($request, [
-            'current_password' => 'required|max:255',
-            'password' => 'required|strong_password|max:255|confirmed',
-        ], ['current_password' => 'Current password', 'password' => 'New password']);
-
-        try {
-            (new ProfileService())->changePassword(
-                (int) Auth::id(),
-                (string) $request->input('current_password'),
-                (string) $request->input('password')
-            );
-        } catch (ServiceException $e) {
-            return $this->failed($request, $e, '/profile');
-        }
-
-        return Response::redirect('/profile')->with('success', 'Your password has been changed.');
     }
 }

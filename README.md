@@ -36,18 +36,20 @@ Open <http://localhost:8000> and sign in with one of the test accounts below.
 
 ### Test accounts (development only)
 
-All seeded accounts use the password **`ChangeMe@123`** and the reserved `.test` email domain.
-They are **not** created when `APP_ENV=production`.
+There are no passwords. Enter a **username** on the sign-in page and a one-time code is emailed
+to the account's address; paste that code to sign in. With `MAIL_TRANSPORT=log` (the default for
+local development) the email, including the code, is written to `storage/logs/mail.log`.
+Seeded accounts use the reserved `.test` email domain and are **not** created when `APP_ENV=production`.
 
-| Role | Email | Staff ID | Department |
+| Role | Username | Staff ID | Department |
 |---|---|---|---|
-| Admin | admin@vvu.test | VVU-0001 | ICT |
-| HOD | reg.hod@vvu.test | VVU-1001 | Registry (REG) |
-| Staff | reg.staff1@vvu.test, reg.staff2@vvu.test | VVU-1002, VVU-1003 | Registry (REG) |
-| HOD | bur.hod@vvu.test | VVU-2001 | Bursary (BUR) |
-| Staff | bur.staff1@vvu.test, bur.staff2@vvu.test | VVU-2002, VVU-2003 | Bursary (BUR) |
-| HOD | ict.hod@vvu.test | VVU-3001 | ICT |
-| Staff | ict.staff1@vvu.test, ict.staff2@vvu.test | VVU-3002, VVU-3003 | ICT |
+| Admin | admin | VVU-0001 | ICT |
+| HOD | reg.hod | VVU-1001 | Registry (REG) |
+| Staff | reg.staff1, reg.staff2 | VVU-1002, VVU-1003 | Registry (REG) |
+| HOD | bur.hod | VVU-2001 | Bursary (BUR) |
+| Staff | bur.staff1, bur.staff2 | VVU-2002, VVU-2003 | Bursary (BUR) |
+| HOD | ict.hod | VVU-3001 | ICT |
+| Staff | ict.staff1, ict.staff2 | VVU-3002, VVU-3003 | ICT |
 
 Seeded Ghana holidays include provisional Eid dates; confirm all holiday dates against the official
 gazette (Admin → Holidays) before relying on due-date calculations.
@@ -148,11 +150,11 @@ credentials with `MAIL_TRANSPORT=smtp`.
 
 ```bash
 php database/migrate.php --seed           # tables + departments, document types, settings, holidays (no test users in production)
-php database/create_admin.php --email=it.admin@vvu.edu.gh --name="ICT Administrator" \
+php database/create_admin.php --username=it.admin --email=it.admin@vvu.edu.gh --name="ICT Administrator" \
     --staff-id=VVU-0001 --department=ICT --department-name="ICT Directorate"
 ```
 
-You are asked for the password (hidden). Then sign in, review **Admin → Departments** (the seeded
+Email must already work (step 2): sign-in codes are emailed. Then sign in with the username, review **Admin → Departments** (the seeded
 list is a sample), set heads of department, import staff with **Admin → Users → Import CSV**, and
 check **Admin → Holidays** and **Admin → Settings** (logo, colour, test email).
 
@@ -223,10 +225,14 @@ service (rules, transaction, policy, audit, notifications) → model (PDO) → `
 - All view output escaped with `e()`; strict Content-Security-Policy (no inline script or style)
 - CSRF token on every POST (419 page on mismatch); oversized uploads get a clear 413 page
 - Sessions: `HttpOnly`, `SameSite=Lax`, `Secure` + `__Host-` prefix over HTTPS, new ID on sign-in,
-  30-minute idle timeout; a password change or reset ends all other sessions of the account;
+  30-minute idle timeout;
   deactivated users are signed out immediately; signed-in pages are sent `Cache-Control: no-store`
-- Passwords hashed with `password_hash()`; 5 failures lock an account for 15 minutes; per-IP limits
-  on sign-in, password reset requests and public tracking
+- Passwordless sign-in: accounts are created by an administrator; users enter their username and a
+  one-time code (6 characters: upper- and lowercase letters, digits and sometimes a symbol; case-sensitive) emailed to them.
+  Codes expire after 10 minutes, work once, only the newest is valid, and only a SHA-256 hash is stored.
+  The username step never reveals whether an account exists. 5 wrong codes lock an account for 15
+  minutes; at most 5 codes per account per 15 minutes; per-IP limits on sign-in, code requests and
+  public tracking
 - Every document action re-checks `DocumentPolicy` on the server inside a locked transaction
 - Uploads: extension whitelist + `finfo` content check (+ DOCX/XLSX structure check), random names
   in `storage/uploads` outside the web root, downloads only through a permission-checked controller

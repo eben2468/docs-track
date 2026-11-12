@@ -17,14 +17,10 @@ $isSelf = $editing && (int) $user['id'] === (int) (auth()['id'] ?? 0);
     </ol>
 </nav>
 <div class="page-header">
-    <h1 class="h4 mb-0"><?= $editing ? 'Edit user' : 'New user' ?></h1>
-    <?php if ($editing && (int) $user['is_active'] === 1): ?>
-        <form method="post" action="<?= e(url("/admin/users/{$user['id']}/password-link")) ?>"
-              data-confirm="Email <?= e($user['email']) ?> a link to set a new password?" data-confirm-button="Send link">
-            <?= csrf_field() ?>
-            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-envelope" aria-hidden="true"></i> Send password link</button>
-        </form>
-    <?php endif; ?>
+    <div>
+        <h1 class="h4 mb-0"><?= $editing ? 'Edit user' : 'New user' ?></h1>
+        <p>Users sign in with their username and a one-time code emailed to them.</p>
+    </div>
 </div>
 
 <div class="card shadow-sm">
@@ -45,9 +41,18 @@ $isSelf = $editing && (int) $user['id'] === (int) (auth()['id'] ?? 0);
                     <?= feedback('staff_id') ?>
                 </div>
                 <div class="col-md-6">
+                    <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control<?= invalid('username') ?>" id="username" name="username"
+                           value="<?= e($value('username')) ?>" required minlength="3" maxlength="50"
+                           autocapitalize="none" spellcheck="false" aria-describedby="usernameHelp" placeholder="e.g. ama.mensah">
+                    <div id="usernameHelp" class="form-text">Used to sign in. Letters, numbers, dots, hyphens and underscores.</div>
+                    <?= feedback('username') ?>
+                </div>
+                <div class="col-md-6">
                     <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
                     <input type="email" class="form-control<?= invalid('email') ?>" id="email" name="email"
-                           value="<?= e($value('email')) ?>" required maxlength="150">
+                           value="<?= e($value('email')) ?>" required maxlength="150" aria-describedby="emailHelp">
+                    <div id="emailHelp" class="form-text">Sign-in codes are sent to this address.</div>
                     <?= feedback('email') ?>
                 </div>
                 <div class="col-md-6">
@@ -78,29 +83,10 @@ $isSelf = $editing && (int) $user['id'] === (int) (auth()['id'] ?? 0);
                     <?php if ($isSelf): ?><div id="roleHelp" class="form-text">You cannot change your own role.</div><?php endif; ?>
                     <?= feedback('role') ?>
                 </div>
-
-                <div class="col-12"><hr class="my-1"></div>
-                <div class="col-12">
-                    <h2 class="h6 mb-1"><?= $editing ? 'Set a new password (optional)' : 'Initial password (optional)' ?></h2>
-                    <p class="form-text mt-0">
-                        <?= $editing
-                            ? 'Leave blank to keep the current password. Prefer "Send password link" so only the user knows it.'
-                            : 'Leave blank to email the user a link to choose their own password (recommended).' ?>
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control<?= invalid('password') ?>" id="password" name="password"
-                           autocomplete="new-password" maxlength="255" aria-describedby="pwHelp">
-                    <div id="pwHelp" class="form-text">At least 8 characters, including a letter and a number.</div>
-                    <?= feedback('password') ?>
-                </div>
-                <div class="col-md-6">
-                    <label for="password_confirmation" class="form-label">Confirm password</label>
-                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation"
-                           autocomplete="new-password" maxlength="255">
-                </div>
             </div>
+            <?php if (!$editing): ?>
+                <p class="form-text mt-3 mb-0"><i class="bi bi-envelope" aria-hidden="true"></i> The user will be emailed their username and how to sign in.</p>
+            <?php endif; ?>
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary"><?= $editing ? 'Save changes' : 'Create user' ?></button>
                 <a class="btn btn-outline-secondary" href="<?= e(url('/admin/users')) ?>">Cancel</a>

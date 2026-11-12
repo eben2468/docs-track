@@ -18,6 +18,9 @@ use Core\Response;
  */
 final class UserController extends Controller
 {
+    /** Usernames: letters, digits, dot, underscore and hyphen (stored lower-case). */
+    public const USERNAME_PATTERN = '/^[A-Za-z0-9._-]+$/';
+
     public function index(Request $request): Response
     {
         $filters = [
@@ -48,17 +51,17 @@ final class UserController extends Controller
     public function store(Request $request): Response
     {
         $data = $this->validated($request, null);
-        $password = $this->passwordInput($request);
 
         try {
-            (new UserService())->create($data, $password);
+            (new UserService())->create($data);
         } catch (ServiceException $e) {
             return $this->failed($request, $e, '/admin/users/create');
         }
 
-        $note = $password === null ? ' A "set your password" email has been queued.' : '';
-
-        return Response::redirect('/admin/users')->with('success', "User {$data['full_name']} created.$note");
+        return Response::redirect('/admin/users')->with(
+            'success',
+            "User {$data['full_name']} created with username \"{$data['username']}\". A welcome email has been queued."
+        );
     }
 
     public function edit(Request $request, string $id): Response
@@ -82,7 +85,7 @@ final class UserController extends Controller
         $data = $this->validated($request, (int) $user['id']);
 
         try {
-            (new UserService())->update((int) $user['id'], $data, $this->passwordInput($request));
+            (new UserService())->update((int) $user['id'], $data);
         } catch (ServiceException $e) {
             return $this->failed($request, $e, "/admin/users/{$user['id']}/edit");
         }
@@ -113,37 +116,26 @@ final class UserController extends Controller
         return $this->back($request, '/admin/users')->with('success', "{$user['full_name']}'s account has been unlocked.");
     }
 
-    public function sendPasswordLink(Request $request, string $id): Response
-    {
-        $user = $this->findOr404((int) $id);
-
-        try {
-            (new UserService())->sendPasswordLink((int) $user['id']);
-        } catch (ServiceException $e) {
-            return $this->failed($request, $e, '/admin/users');
-        }
-
-        return $this->back($request, '/admin/users')->with('success', "A password link has been queued for {$user['email']}.");
-    }
 
     /**
-     * @return array{staff_id: string, full_name: string, email: string, phone: ?string, department_id: int, role: string}
+     * @return array{staff_id: string, username: string, full_name: string, email: string, phone: ?string, department_id: int, role: string}
      */
     private function validated(Request $request, ?int $id): array
     {
         $ignore = $id ?? 'NULL';
         $data = $this->validate($request, [
             'staff_id' => ['required', 'max:30', "unique:users,staff_id,$ignore"],
+            'username' => ['required', 'min:3', 'max:50', 'regex:' . self::USERNAME_PATTERN, "unique:users,username,$ignore"],
             'full_name' => 'required|max:150',
             'email' => ['required', 'email', 'max:150', "unique:users,email,$ignore"],
             'phone' => ['max:20', 'regex:/^[0-9+()\s-]*$/'],
             'department_id' => 'required|integer|exists:departments,id',
             'role' => 'required|in:admin,hod,staff',
-            'password' => 'strong_password|max:255|confirmed',
-        ], ['staff_id' => 'Staff ID', 'full_name' => 'Full name', 'department_id' => 'Department']);
+        ], ['staff_id' => 'Staff ID', 'username' => 'Username', 'full_name' => 'Full name', 'department_id' => 'Department']);
 
         return [
             'staff_id' => (string) $data['staff_id'],
+            'username' => strtolower((string) $data['username']),
             'full_name' => (string) $data['full_name'],
             'email' => strtolower((string) $data['email']),
             'phone' => $data['phone'],
@@ -152,12 +144,6 @@ final class UserController extends Controller
         ];
     }
 
-    private function passwordInput(Request $request): ?string
-    {
-        $password = $request->input('password');
-
-        return is_string($password) && $password !== '' ? $password : null;
-    }
 
     /**
      * @return array<string, mixed>

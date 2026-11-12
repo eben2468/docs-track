@@ -1,6 +1,6 @@
 <?php
 /**
- * The signed-in user's profile and password.
+ * The signed-in user's profile and how they sign in.
  *
  * @var array<string, mixed> $user
  * @var array<string, mixed>|null $department
@@ -33,7 +33,7 @@
                                value="<?= e(old('phone', $user['phone'])) ?>" maxlength="20">
                         <?= feedback('phone') ?>
                     </div>
-                    <p class="form-text">To change your email, staff ID or department, contact the system administrator.</p>
+                    <p class="form-text">To change your username, email, staff ID or department, contact the system administrator.</p>
                     <button type="submit" class="btn btn-primary">Save details</button>
                 </form>
             </div>
@@ -42,30 +42,16 @@
 
     <div class="col-lg-5">
         <div class="card shadow-sm">
-            <div class="card-header bg-body"><h2 class="h6 mb-0">Change password</h2></div>
-            <div class="card-body">
-                <form method="post" action="<?= e(url('/profile/password')) ?>" novalidate>
-                    <?= csrf_field() ?>
-                    <div class="mb-3">
-                        <label for="current_password" class="form-label">Current password</label>
-                        <input type="password" class="form-control<?= invalid('current_password') ?>" id="current_password"
-                               name="current_password" autocomplete="current-password" required maxlength="255">
-                        <?= feedback('current_password') ?>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">New password</label>
-                        <input type="password" class="form-control<?= invalid('password') ?>" id="password" name="password"
-                               autocomplete="new-password" required maxlength="255" aria-describedby="newPasswordHelp">
-                        <div id="newPasswordHelp" class="form-text">At least 8 characters, including a letter and a number.</div>
-                        <?= feedback('password') ?>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password_confirmation" class="form-label">Confirm new password</label>
-                        <input type="password" class="form-control" id="password_confirmation" name="password_confirmation"
-                               autocomplete="new-password" required maxlength="255">
-                    </div>
-                    <button type="submit" class="btn btn-outline-primary">Change password</button>
-                </form>
+            <div class="card-header bg-body"><h2 class="h6 mb-0">How you sign in</h2></div>
+            <div class="card-body small">
+                <p class="mb-2">Username</p>
+                <p class="fs-5 fw-semibold font-monospace mb-3"><?= e($user['username']) ?></p>
+                <p class="mb-2">
+                    <i class="bi bi-envelope-check text-primary" aria-hidden="true"></i>
+                    Each time you sign in, a one-time code is emailed to <strong><?= e($user['email']) ?></strong>.
+                    There is no password to remember.
+                </p>
+                <p class="text-body-secondary mb-0">Never share your sign-in codes. System staff will never ask for them.</p>
             </div>
         </div>
     </div>

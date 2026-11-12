@@ -21,7 +21,7 @@ $selfId = (int) (auth()['id'] ?? 0);
     <div class="row g-2 align-items-end">
         <div class="col-md-4">
             <label for="q" class="form-label small">Search</label>
-            <input type="search" class="form-control" id="q" name="q" value="<?= e($filters['q']) ?>" placeholder="Name, email or staff ID">
+            <input type="search" class="form-control" id="q" name="q" value="<?= e($filters['q']) ?>" placeholder="Name, username, email or staff ID">
         </div>
         <div class="col-md-3">
             <label for="department" class="form-label small">Department</label>
@@ -83,7 +83,7 @@ $selfId = (int) (auth()['id'] ?? 0);
                             <span class="app-avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr((string) $u['full_name'], 0, 1))) ?></span>
                             <div class="min-w-0">
                                 <div class="fw-semibold"><?= e($u['full_name']) ?></div>
-                                <div class="small text-body-secondary text-truncate"><?= e($u['email']) ?></div>
+                                <div class="small text-body-secondary text-truncate"><span class="font-monospace">@<?= e($u['username']) ?></span> · <?= e($u['email']) ?></div>
                             </div>
                         </div>
                     </td>

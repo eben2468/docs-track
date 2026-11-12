@@ -62,7 +62,7 @@ final class Auth
         }
 
         $user = Database::instance()->fetch(
-            'SELECT id, staff_id, full_name, email, phone, role, department_id, is_active, password_hash
+            'SELECT id, staff_id, username, full_name, email, phone, role, department_id, is_active, password_hash
              FROM users WHERE id = ? AND is_active = 1',
             [$id]
         );
