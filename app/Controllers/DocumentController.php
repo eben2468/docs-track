@@ -12,6 +12,7 @@ use App\Models\DocumentType;
 use App\Policies\DocumentPolicy;
 use App\Services\AuditService;
 use App\Services\DocumentService;
+use App\Services\MovementService;
 use App\Services\QrService;
 use App\Services\ServiceException;
 use App\Services\UploadService;
@@ -77,18 +78,48 @@ final class DocumentController extends Controller
     {
         [$document, $user] = $this->viewable((int) $id);
         $policy = new DocumentPolicy();
+        $movements = new DocumentMovement();
+        $docId = (int) $document['id'];
+        $open = $movements->openFor($docId);
+        $cameFrom = $document['status'] === 'received' ? $movements->lastReceivedFor($docId) : null;
 
         if ($document['confidentiality'] === 'confidential') {
-            (new AuditService())->log('document.viewed', ['tracking_no' => $document['tracking_no']], (int) $document['id']);
+            (new AuditService())->log('document.viewed', ['tracking_no' => $document['tracking_no']], $docId);
+        }
+
+        $canSend = $policy->canSend($user, $document, $open);
+        $history = $movements->historyFor($docId);
+        $openDetailed = null;
+        foreach ($history as $m) {
+            if ($m['status'] === 'in_transit') {
+                $openDetailed = $m;
+                break;
+            }
         }
 
         return $this->view('documents/show', [
             'title' => $document['tracking_no'],
             'document' => $document,
-            'attachments' => (new Attachment())->forDocument((int) $document['id'], $policy->canManageHiddenAttachments($user)),
-            'canEdit' => $policy->canEdit($user, $document),
-            'canCancel' => $policy->canCancel($user, $document),
-            'canManageHidden' => $policy->canManageHiddenAttachments($user),
+            'attachments' => (new Attachment())->forDocument($docId, $policy->canManageHiddenAttachments($user)),
+            'history' => $history,
+            'openMovement' => $openDetailed,
+            'cameFrom' => $cameFrom,
+            'can' => [
+                'edit' => $policy->canEdit($user, $document),
+                'cancel' => $policy->canCancel($user, $document),
+                'send' => $canSend,
+                'receive' => $policy->canReceive($user, $document, $open),
+                'return' => $policy->canReturn($user, $document, $cameFrom),
+                'recall' => $policy->canRecall($user, $document, $open),
+                'complete' => $policy->canComplete($user, $document),
+                'manageHidden' => $policy->canManageHiddenAttachments($user),
+            ],
+            'destinations' => $canSend ? array_values(array_filter(
+                (new Department())->active(),
+                static fn (array $d): bool => (int) $d['id'] !== (int) $document['current_department_id']
+            )) : [],
+            'defaultDueDate' => $canSend ? (new MovementService())->defaultDueDate((int) $document['document_type_id'])->format('Y-m-d') : null,
+            'cameFromDepartment' => $cameFrom === null ? null : (new Department())->find((int) $cameFrom['from_department_id']),
             'maxUploadMb' => (int) setting('max_upload_mb'),
         ]);
     }

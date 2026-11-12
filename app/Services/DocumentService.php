@@ -70,7 +70,7 @@ final class DocumentService
                     'tracking_no' => $trackingNo,
                     'title' => $data['confidentiality'] === 'confidential' ? null : $data['title'],
                     'confidentiality' => $data['confidentiality'],
-                ], $id);
+                ], $id, (int) $user['id']);
 
                 $this->storeAttachments($id, $files, $user, $stored);
 
@@ -131,7 +131,7 @@ final class DocumentService
             }
 
             $this->documents->update($documentId, ['status' => 'cancelled']);
-            $this->audit->log('document.cancelled', ['tracking_no' => $document['tracking_no']], $documentId);
+            $this->audit->log('document.cancelled', ['tracking_no' => $document['tracking_no']], $documentId, (int) $user['id']);
         });
     }
 
@@ -146,7 +146,7 @@ final class DocumentService
             throw new ServiceException('Only administrators can hide attachments.');
         }
 
-        $this->db->transaction(function () use ($attachmentId, $hidden): void {
+        $this->db->transaction(function () use ($attachmentId, $hidden, $user): void {
             $attachment = $this->attachments->find($attachmentId) ?? throw new ServiceException('Attachment not found.');
             if ((bool) $attachment['is_hidden'] === $hidden) {
                 return;
@@ -155,7 +155,7 @@ final class DocumentService
             $this->audit->log($hidden ? 'attachment.hidden' : 'attachment.unhidden', [
                 'attachment_id' => $attachmentId,
                 'name' => $attachment['original_name'],
-            ], (int) $attachment['document_id']);
+            ], (int) $attachment['document_id'], (int) $user['id']);
         });
     }
 
@@ -192,7 +192,7 @@ final class DocumentService
                 'attachment_id' => $attachmentId,
                 'name' => $saved['original_name'],
                 'size_bytes' => $saved['size_bytes'],
-            ], $documentId);
+            ], $documentId, (int) $user['id']);
         }
     }
 

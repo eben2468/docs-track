@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\DocumentMovement;
+use Core\Auth;
 use Core\Database;
 use Core\Logger;
 use Core\Request;
@@ -11,15 +13,18 @@ use Core\Response;
 use Throwable;
 
 /**
- * Temporary landing page for Phase 0: proves the layout, routing and DB connection work.
- * Replaced by the dashboard in a later phase.
+ * Temporary home page until the dashboards are built: documents awaiting the user's
+ * department (with bulk receive) and a system check.
  */
 final class HomeController extends Controller
 {
     public function index(Request $request): Response
     {
+        $user = Auth::user();
+
         return $this->view('home', [
             'title' => 'Home',
+            'incoming' => (new DocumentMovement())->incomingFor((int) $user['department_id']),
             'checks' => [
                 'PHP version' => [true, PHP_VERSION],
                 'Environment' => [true, (string) config('app.env')],

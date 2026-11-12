@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use RuntimeException;
+use DomainException;
 
 /**
- * A business-rule violation whose message is safe to show to the user
+ * A business-rule (domain) violation whose message is safe to show to the user
  * (e.g. "You cannot deactivate your own account."). Controllers catch it and
  * redirect back with the message as a flash.
  */
-final class ServiceException extends RuntimeException
+final class ServiceException extends DomainException
 {
     /**
      * @param string $field Optional form field the problem belongs to

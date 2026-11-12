@@ -77,6 +77,92 @@
         }
     });
 
+    /* <input data-filter-select="selectId">: hide options of that select that don't match the typed text. */
+    document.querySelectorAll('input[data-filter-select]').forEach(function (input) {
+        var select = document.getElementById(input.getAttribute('data-filter-select'));
+        if (!select) {
+            return;
+        }
+        input.addEventListener('input', function () {
+            var term = input.value.trim().toLowerCase();
+            Array.prototype.forEach.call(select.options, function (option) {
+                option.hidden = term !== '' && option.textContent.toLowerCase().indexOf(term) === -1;
+            });
+        });
+    });
+
+    /*
+     * <select data-recipients-target="userSelectId" data-recipients-url="/api/departments/">:
+     * when a department is chosen, load its active users into the recipient select.
+     */
+    document.querySelectorAll('select[data-recipients-target]').forEach(function (deptSelect) {
+        var target = document.getElementById(deptSelect.getAttribute('data-recipients-target'));
+        var baseUrl = deptSelect.getAttribute('data-recipients-url');
+        if (!target || !baseUrl) {
+            return;
+        }
+
+        function reset(label) {
+            target.innerHTML = '';
+            var option = document.createElement('option');
+            option.value = '';
+            option.textContent = label;
+            target.appendChild(option);
+        }
+
+        function load() {
+            var id = deptSelect.value;
+            reset('Anyone in the department');
+            target.disabled = true;
+            if (!id) {
+                return;
+            }
+            fetch(baseUrl + encodeURIComponent(id) + '/users', {
+                headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                credentials: 'same-origin'
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            }).then(function (data) {
+                (data.users || []).forEach(function (user) {
+                    var option = document.createElement('option');
+                    option.value = String(user.id);
+                    option.textContent = user.name + ' (' + user.role + ')';
+                    target.appendChild(option);
+                });
+                target.disabled = false;
+            }).catch(function () {
+                reset('Could not load people; the whole department will be notified');
+            });
+        }
+
+        deptSelect.addEventListener('change', load);
+        if (deptSelect.value) {
+            load();
+        }
+    });
+
+    /* Re-open a modal whose form came back with validation errors. */
+    if (window.bootstrap) {
+        document.querySelectorAll('.modal').forEach(function (modal) {
+            if (modal.querySelector('.is-invalid')) {
+                window.bootstrap.Modal.getOrCreateInstance(modal).show();
+            }
+        });
+    }
+
+    /* "Select all" checkbox: <input type="checkbox" data-check-all="name[]">. */
+    document.addEventListener('change', function (event) {
+        var name = event.target.getAttribute && event.target.getAttribute('data-check-all');
+        if (name) {
+            document.querySelectorAll('input[type="checkbox"][name="' + name + '"]').forEach(function (box) {
+                box.checked = event.target.checked;
+            });
+        }
+    });
+
     /* Colour pickers: show the hex value next to the swatch. */
     document.querySelectorAll('input[type="color"]').forEach(function (input) {
         var label = input.parentElement.querySelector('[data-color-value]');
