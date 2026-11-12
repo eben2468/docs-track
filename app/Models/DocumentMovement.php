@@ -107,6 +107,24 @@ final class DocumentMovement extends Model
     }
 
     /**
+     * Number of movements waiting for a department to receive them.
+     */
+    public function countIncoming(int $departmentId): int
+    {
+        return $this->count(['to_department_id' => $departmentId, 'status' => 'in_transit']);
+    }
+
+    /**
+     * Movements of a document in chronological order (for the progress strip).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function chronologicalFor(int $documentId): array
+    {
+        return array_reverse($this->historyFor($documentId));
+    }
+
+    /**
      * The most recent movement that was received (how the document reached its holder).
      *
      * @return array<string, mixed>|null

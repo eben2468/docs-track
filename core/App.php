@@ -150,6 +150,7 @@ final class App
             413 => 'Upload Too Large',
             419 => 'Page Expired',
             429 => 'Too Many Requests',
+            422 => 'Unprocessable Request',
             default => 'Server Error',
         };
     }

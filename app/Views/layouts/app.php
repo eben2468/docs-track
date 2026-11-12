@@ -12,19 +12,23 @@ $path = current_path();
 $isAdmin = $user !== null && $user['role'] === 'admin';
 $hasLogo = setting('logo_path') !== '';
 
+$currentTab = is_string($_GET['tab'] ?? null) ? $_GET['tab'] : '';
+$incomingCount = $user !== null ? incoming_count() : 0;
+
 /*
- * Menu items: [label, icon, path or null]. Items with a null path belong to later
- * build phases and are shown disabled until their pages exist.
+ * Menu items: [label, icon, path or null, badge]. Items with a null path belong to later
+ * build phases and are shown disabled until their pages exist. "/documents?tab=x" items
+ * are active when that list tab is open.
  */
 $mainMenu = [
     ['Dashboard', 'speedometer2', '/'],
     ['Register Document', 'file-earmark-plus', '/documents/create'],
-    ['Incoming', 'inbox', null],
-    ['With Us', 'folder2-open', null],
-    ['Outgoing', 'send', null],
-    ['Registered', 'journal-text', null],
-    ['Completed', 'check2-square', null],
-    ['Scan QR', 'qr-code-scan', null],
+    ['Incoming', 'inbox', '/documents?tab=incoming', $incomingCount],
+    ['With Us', 'folder2-open', '/documents?tab=with-us'],
+    ['Outgoing', 'send', '/documents?tab=outgoing'],
+    ['Registered', 'journal-text', '/documents?tab=registered'],
+    ['Completed', 'check2-square', '/documents?tab=completed'],
+    ['Scan QR', 'qr-code-scan', '/scan'],
 ];
 $adminMenu = [
     ['Users', 'people', '/admin/users'],
@@ -34,9 +38,18 @@ $adminMenu = [
     ['Settings', 'gear', '/admin/settings'],
     ['Audit Logs', 'shield-check', null],
 ];
-$isActive = static fn (string $itemPath): bool => $itemPath === '/' ? $path === '/' : ($path === $itemPath || str_starts_with($path, $itemPath . '/'));
+$isActive = static function (string $itemPath) use ($path, $currentTab): bool {
+    if (str_contains($itemPath, '?tab=')) {
+        [$itemBase, $itemTab] = explode('?tab=', $itemPath, 2);
+
+        return $path === $itemBase && ($currentTab === $itemTab || ($currentTab === '' && $itemTab === 'incoming'));
+    }
+
+    return $itemPath === '/' ? $path === '/' : ($path === $itemPath || str_starts_with($path, $itemPath . '/'));
+};
 $renderItem = static function (array $item) use ($isActive): string {
     [$label, $icon, $itemPath] = $item;
+    $badge = (int) ($item[3] ?? 0);
     if ($itemPath === null) {
         return '<span class="nav-link disabled" aria-disabled="true" title="Available in a later release">'
             . '<i class="bi bi-' . e($icon) . '" aria-hidden="true"></i> ' . e($label)
@@ -46,7 +59,9 @@ $renderItem = static function (array $item) use ($isActive): string {
 
     return '<a class="nav-link' . ($active ? ' active' : '') . '" href="' . e(url($itemPath)) . '"'
         . ($active ? ' aria-current="page"' : '') . '>'
-        . '<i class="bi bi-' . e($icon) . '" aria-hidden="true"></i> ' . e($label) . '</a>';
+        . '<i class="bi bi-' . e($icon) . '" aria-hidden="true"></i> ' . e($label)
+        . ($badge > 0 ? ' <span class="badge rounded-pill text-bg-warning ms-auto">' . $badge . '<span class="visually-hidden"> waiting</span></span>' : '')
+        . '</a>';
 };
 ?>
 <!doctype html>
@@ -100,11 +115,12 @@ $renderItem = static function (array $item) use ($isActive): string {
                 <i class="bi bi-list" aria-hidden="true"></i>
             </button>
 
-            <form class="app-search d-none d-md-block" role="search" action="#" title="Quick tracking search is available in a later release">
-                <label class="visually-hidden" for="quickTrack">Track a document by number</label>
+            <form class="app-search" role="search" method="get" action="<?= e(url('/search')) ?>">
+                <label class="visually-hidden" for="quickTrack">Track a document by number or keyword</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
-                    <input type="search" class="form-control" id="quickTrack" placeholder="Tracking no. e.g. VVU-REG-2026-00042" disabled>
+                    <input type="search" class="form-control" id="quickTrack" name="q" maxlength="100"
+                           placeholder="Tracking no. or keyword" autocomplete="off">
                 </div>
             </form>
 

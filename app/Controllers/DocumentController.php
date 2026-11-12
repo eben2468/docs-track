@@ -121,6 +121,8 @@ final class DocumentController extends Controller
             'defaultDueDate' => $canSend ? (new MovementService())->defaultDueDate((int) $document['document_type_id'])->format('Y-m-d') : null,
             'cameFromDepartment' => $cameFrom === null ? null : (new Department())->find((int) $cameFrom['from_department_id']),
             'maxUploadMb' => (int) setting('max_upload_mb'),
+            'viaQr' => $request->query('via') === 'qr',
+            'alertHours' => max(1, (int) setting('unreceived_alert_hours')),
         ]);
     }
 

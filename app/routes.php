@@ -13,6 +13,10 @@ use App\Controllers\AttachmentController;
 use App\Controllers\AuthController;
 use App\Controllers\BrandingController;
 use App\Controllers\DocumentController;
+use App\Controllers\DocumentListController;
+use App\Controllers\ScanController;
+use App\Controllers\SearchController;
+use App\Controllers\TrackController;
 use App\Controllers\HomeController;
 use App\Controllers\MovementController;
 use App\Controllers\PasswordResetController;
@@ -41,6 +45,10 @@ return static function (Router $router): void {
         $router->get('/branding/theme', [BrandingController::class, 'theme']);
         $router->get('/branding/logo', [BrandingController::class, 'logo']);
 
+        // Public tracking (FR-14) — also the URL encoded in every QR label.
+        $router->get('/track', [TrackController::class, 'index']);
+        $router->get('/track/{trackingNo:[A-Za-z0-9-]+}', [TrackController::class, 'show']);
+
         // Guests only.
         $router->group(['middleware' => ['guest']], static function (Router $router): void {
             $router->get('/login', [AuthController::class, 'showLogin']);
@@ -60,6 +68,10 @@ return static function (Router $router): void {
             $router->post('/profile/password', [ProfileController::class, 'updatePassword']);
 
             // Documents.
+            $router->get('/documents', [DocumentListController::class, 'index']);
+            $router->get('/documents/export', [DocumentListController::class, 'export']);
+            $router->get('/search', [SearchController::class, 'go']);
+            $router->get('/scan', [ScanController::class, 'index']);
             $router->get('/documents/create', [DocumentController::class, 'create']);
             $router->post('/documents/create', [DocumentController::class, 'store']);
             $router->get('/documents/{id:\d+}', [DocumentController::class, 'show']);

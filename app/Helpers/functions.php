@@ -309,6 +309,71 @@ if (!function_exists('format_datetime')) {
     }
 }
 
+if (!function_exists('human_duration')) {
+    /**
+     * A duration in words, largest unit only: "3 days", "2 hours", "5 minutes", "under a minute".
+     */
+    function human_duration(int $seconds): string
+    {
+        $seconds = abs($seconds);
+        foreach ([[86400, 'day'], [3600, 'hour'], [60, 'minute']] as [$size, $unit]) {
+            if ($seconds >= $size) {
+                $n = intdiv($seconds, $size);
+
+                return $n . ' ' . $unit . ($n === 1 ? '' : 's');
+            }
+        }
+
+        return 'under a minute';
+    }
+}
+
+if (!function_exists('time_ago')) {
+    /**
+     * Relative time for a DB datetime ("2 hours ago"), wrapped in a <time> element whose
+     * title shows the exact time (spec §10.3). Returns HTML (already escaped).
+     */
+    function time_ago(?string $value): string
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+        $time = new DateTimeImmutable($value);
+        $diff = now()->getTimestamp() - $time->getTimestamp();
+        $text = $diff < 60 ? 'just now' : human_duration($diff) . ' ago';
+
+        return '<time datetime="' . e($time->format('c')) . '" title="' . e($time->format('l j F Y, H:i')) . '">' . e($text) . '</time>';
+    }
+}
+
+if (!function_exists('seconds_since')) {
+    /**
+     * Seconds from a DB datetime until now (0 for empty values).
+     */
+    function seconds_since(?string $value): int
+    {
+        return ($value === null || $value === '') ? 0 : max(0, now()->getTimestamp() - (new DateTimeImmutable($value))->getTimestamp());
+    }
+}
+
+if (!function_exists('incoming_count')) {
+    /**
+     * Documents awaiting receipt by the signed-in user's department (sidebar badge).
+     */
+    function incoming_count(): int
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            return 0;
+        }
+        try {
+            return (new \App\Models\DocumentMovement())->countIncoming((int) $user['department_id']);
+        } catch (\PDOException) {
+            return 0;
+        }
+    }
+}
+
 if (!function_exists('now')) {
     /**
      * Current time in the application timezone (Africa/Accra).

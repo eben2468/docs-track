@@ -109,6 +109,16 @@ final class Phase2LogicTest extends TestCase
         $this->assertSame(['code' => ['REG', 'REGI'], 'parent_id' => [null, 3]], AuditService::diff($before, $after));
     }
 
+    public function testCsvExportNeutralisesFormulas(): void
+    {
+        $csv = \App\Services\CsvExport::build(['A', 'B'], [['=HYPERLINK("http://evil")', '+1'], ['-2', 'Plain "quoted", text'], ['@SUM(A1)', null]]);
+
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $this->assertStringContainsString("\"'=HYPERLINK(\"\"http://evil\"\")\",'+1\r\n", $csv);
+        $this->assertStringContainsString("'-2,\"Plain \"\"quoted\"\", text\"\r\n", $csv);
+        $this->assertStringContainsString("'@SUM(A1),\r\n", $csv);
+    }
+
     public function testStrongPasswordRule(): void
     {
         $rules = ['password' => 'strong_password'];

@@ -22,10 +22,19 @@ $pageTitle = isset($title) && $title !== '' ? $title . ' · ' . $appName : $appN
 <body class="public-body">
 <header class="public-header">
     <div class="container d-flex align-items-center">
-        <a class="app-brand" href="<?= e(url('/')) ?>">
-            <i class="bi bi-folder-symlink" aria-hidden="true"></i>
-            <span><?= e($appName) ?></span>
+        <a class="app-brand" href="<?= e(url('/track')) ?>">
+            <?php if (setting('logo_path') !== ''): ?>
+                <img src="<?= e(url('/branding/logo')) ?>" alt="" class="app-brand-logo">
+            <?php else: ?>
+                <i class="bi bi-folder-symlink" aria-hidden="true"></i>
+            <?php endif; ?>
+            <span class="d-none d-sm-inline"><?= e($appName) ?></span>
+            <span class="d-sm-none">VVU DTS</span>
         </a>
+        <nav class="ms-auto d-flex gap-3 small" aria-label="Public">
+            <a class="public-link" href="<?= e(url('/track')) ?>"><i class="bi bi-search" aria-hidden="true"></i> Track</a>
+            <a class="public-link" href="<?= e(url('/login')) ?>"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Staff sign in</a>
+        </nav>
     </div>
 </header>
 <main class="container py-5">
