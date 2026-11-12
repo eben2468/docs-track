@@ -374,6 +374,24 @@ if (!function_exists('incoming_count')) {
     }
 }
 
+if (!function_exists('current_department_name')) {
+    /**
+     * Name of the signed-in user's department ('' for guests or if unavailable).
+     */
+    function current_department_name(): string
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            return '';
+        }
+        try {
+            return (string) ((new \App\Models\Department())->find((int) $user['department_id'])['name'] ?? '');
+        } catch (\PDOException) {
+            return '';
+        }
+    }
+}
+
 if (!function_exists('unread_notification_count')) {
     /**
      * Unread notifications for the signed-in user (bell badge).

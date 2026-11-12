@@ -5,12 +5,15 @@
  * @var list<array<string, mixed>> $holidays
  */
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0">Holidays</h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0">Holidays</h1>
+        <p>Days skipped, along with weekends, when due dates are calculated.</p>
+    </div>
     <a class="btn btn-primary" href="<?= e(url('/admin/holidays/create')) ?>"><i class="bi bi-plus-lg" aria-hidden="true"></i> New holiday</a>
 </div>
 
-<p class="text-body-secondary small">Holidays are skipped, along with weekends, when due dates are calculated. Islamic holiday dates are announced each year; check them against the official gazette.</p>
+<p class="text-body-secondary small"><i class="bi bi-info-circle" aria-hidden="true"></i> Islamic holiday dates are announced each year; check them against the official gazette.</p>
 
 <form class="d-flex align-items-center gap-2 mb-3" method="get" action="<?= e(url('/admin/holidays')) ?>">
     <label for="year" class="form-label mb-0">Year</label>

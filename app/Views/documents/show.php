@@ -66,9 +66,9 @@ $stuck = $openMovement !== null && seconds_since($openMovement['sent_at']) > $al
     </div>
 <?php endif; ?>
 
-<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+<div class="doc-header d-flex flex-wrap align-items-start justify-content-between gap-3">
     <div class="min-w-0">
-        <p class="font-monospace text-body-secondary mb-1"><?= e($document['tracking_no']) ?></p>
+        <span class="doc-tracking font-monospace"><?= e($document['tracking_no']) ?></span>
         <h1 class="h4 mb-2 text-break"><?= e($document['title']) ?></h1>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <?= partial('partials/status-badge', ['status' => $document['status']]) ?>

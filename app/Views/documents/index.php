@@ -42,8 +42,19 @@ $filtersOpen = array_diff_key($filters, ['q' => true]) !== [];
 $statusLabels = ['draft' => 'Draft', 'in_transit' => 'In transit', 'received' => 'Received', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
 $isIncoming = $tab === 'incoming';
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0"><?= e(DocumentListController::tabLabel($tab)) ?></h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0"><?= e(DocumentListController::tabLabel($tab)) ?></h1>
+        <p><?= e(match ($tab) {
+            'incoming' => 'Documents sent to your department and waiting for you to receive them.',
+            'with-us' => 'Documents your department has received and is working on.',
+            'outgoing' => 'Documents your department sent that have not been received yet.',
+            'registered' => 'Every document registered by your department.',
+            'completed' => 'Documents that have been closed.',
+            'all' => 'Every document in the university.',
+            default => 'Every document your department has handled.',
+        }) ?></p>
+    </div>
     <div class="d-flex gap-2">
         <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('/documents/export', $query)) ?>">
             <i class="bi bi-filetype-csv" aria-hidden="true"></i> Export CSV

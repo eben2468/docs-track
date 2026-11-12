@@ -16,7 +16,7 @@ $isSelf = $editing && (int) $user['id'] === (int) (auth()['id'] ?? 0);
         <li class="breadcrumb-item active" aria-current="page"><?= $editing ? e($user['full_name']) : 'New' ?></li>
     </ol>
 </nav>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+<div class="page-header">
     <h1 class="h4 mb-0"><?= $editing ? 'Edit user' : 'New user' ?></h1>
     <?php if ($editing && (int) $user['is_active'] === 1): ?>
         <form method="post" action="<?= e(url("/admin/users/{$user['id']}/password-link")) ?>"

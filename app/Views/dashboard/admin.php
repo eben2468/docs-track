@@ -15,11 +15,11 @@
 use App\Services\DashboardService;
 
 $statusMeta = [
-    'draft' => ['Draft', '#6c757d'],
-    'in_transit' => ['In transit', '#ffc107'],
-    'received' => ['Received', '#0d6efd'],
-    'completed' => ['Completed', '#198754'],
-    'cancelled' => ['Cancelled', '#212529'],
+    'draft' => ['Draft', '#98a2b3'],
+    'in_transit' => ['In transit', '#f79009'],
+    'received' => ['Received', '#2e6ff2'],
+    'completed' => ['Completed', '#12b76a'],
+    'cancelled' => ['Cancelled', '#344054'],
 ];
 $statusChart = [
     'type' => 'doughnut',
@@ -31,17 +31,23 @@ $overdueChart = [
     'type' => 'bar',
     'labels' => array_column($topOverdue, 'code'),
     'values' => array_column($topOverdue, 'overdue'),
-    'colors' => array_fill(0, count($topOverdue), '#dc3545'),
+    'colors' => array_fill(0, count($topOverdue), '#f04438'),
     'label' => 'Overdue documents',
 ];
 ?>
-<div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-4">
-    <div>
-        <h1 class="h4 mb-1">University overview</h1>
-        <p class="text-body-secondary mb-0"><?= e(number_format($total)) ?> documents registered in total.</p>
+<section class="hero-card">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative">
+        <div>
+            <div class="hero-eyebrow"><?= e(now()->format('l, j F Y')) ?> · Administrator</div>
+            <h1>University overview</h1>
+            <p><?= e(number_format($total)) ?> documents registered in total<?= $overdueTotal > 0 ? ' · <strong class="text-white">' . e(number_format($overdueTotal)) . ' overdue</strong>' : '' ?><?= $stuckTotal > 0 ? ' · <strong class="text-white">' . e(number_format($stuckTotal)) . ' not received in ' . e($alertHours) . ' h</strong>' : '' ?>.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-hero-ghost" href="<?= e(url('/', ['view' => 'department'])) ?>"><i class="bi bi-building" aria-hidden="true"></i> My department</a>
+            <a class="btn btn-light" href="<?= e(url('/documents', ['tab' => 'all'])) ?>"><i class="bi bi-collection" aria-hidden="true"></i> All documents</a>
+        </div>
     </div>
-    <a class="btn btn-sm btn-outline-secondary" href="<?= e(url('/', ['view' => 'department'])) ?>"><i class="bi bi-building" aria-hidden="true"></i> My department</a>
-</div>
+</section>
 
 <div class="row g-3 mb-4 stat-grid">
     <div class="col-6 col-md-3"><?= partial('partials/stat-card', ['label' => 'In transit', 'value' => $byStatus['in_transit'], 'icon' => 'truck', 'href' => '/documents?tab=all&status=in_transit', 'tone' => 'warning', 'hint' => "$stuckTotal not received in {$alertHours} h"]) ?></div>

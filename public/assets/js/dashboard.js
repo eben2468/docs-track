@@ -8,6 +8,9 @@
     }
 
     var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.Chart.defaults.font.family = 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+    window.Chart.defaults.color = '#66728a';
+    window.Chart.defaults.borderColor = '#eef1f6';
 
     document.querySelectorAll('canvas[data-chart]').forEach(function (canvas) {
         var spec;

@@ -1,16 +1,17 @@
 <?php
 /**
- * Document status badge (spec §10.3 colours).
+ * Document status pill (spec §10.3 colours: Draft grey, In Transit amber, Received blue,
+ * Completed green, Cancelled dark).
  *
  * @var string $status draft|in_transit|received|completed|cancelled
  */
-[$label, $class] = match ($status) {
-    'draft' => ['Draft', 'text-bg-secondary'],
-    'in_transit' => ['In Transit', 'text-bg-warning'],
-    'received' => ['Received', 'text-bg-primary'],
-    'completed' => ['Completed', 'text-bg-success'],
-    'cancelled' => ['Cancelled', 'text-bg-dark'],
-    default => [ucfirst($status), 'text-bg-light'],
-};
+$label = [
+    'draft' => 'Draft',
+    'in_transit' => 'In Transit',
+    'received' => 'Received',
+    'completed' => 'Completed',
+    'cancelled' => 'Cancelled',
+][$status] ?? ucfirst($status);
+$key = in_array($status, ['draft', 'in_transit', 'received', 'completed', 'cancelled'], true) ? $status : 'draft';
 ?>
-<span class="badge <?= $class ?>"><?= e($label) ?></span>
+<span class="status-pill status-<?= $key ?>"><?= e($label) ?></span>

@@ -4,8 +4,11 @@
  * @var array{q: string, status: string} $filters
  */
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0">Departments</h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0">Departments</h1>
+        <p>Offices that send and receive documents, and their heads.</p>
+    </div>
     <a class="btn btn-primary" href="<?= e(url('/admin/departments/create')) ?>"><i class="bi bi-plus-lg" aria-hidden="true"></i> New department</a>
 </div>
 

@@ -15,18 +15,30 @@
 $dept = (int) $user['department_id'];
 $actionVerb = ['send' => 'sent', 'forward' => 'forwarded', 'return' => 'returned'];
 ?>
-<div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-4">
-    <div>
-        <h1 class="h4 mb-1">Good <?= (int) now()->format('G') < 12 ? 'morning' : ((int) now()->format('G') < 17 ? 'afternoon' : 'evening') ?>, <?= e(explode(' ', (string) $user['full_name'])[0]) ?></h1>
-        <p class="text-body-secondary mb-0">Here is what is happening in your department today.</p>
+<section class="hero-card">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative">
+        <div>
+            <div class="hero-eyebrow"><?= e(now()->format('l, j F Y')) ?> · <?= e(current_department_name()) ?></div>
+            <h1>Good <?= (int) now()->format('G') < 12 ? 'morning' : ((int) now()->format('G') < 17 ? 'afternoon' : 'evening') ?>, <?= e(explode(' ', (string) $user['full_name'])[0]) ?></h1>
+            <p>
+                <?php if ($cards['incoming'] > 0): ?>
+                    You have <strong class="text-white"><?= e($cards['incoming']) ?> document<?= $cards['incoming'] === 1 ? '' : 's' ?></strong> waiting to be received<?= $cards['overdue'] > 0 ? ' and <strong class="text-white">' . e($cards['overdue']) . ' overdue</strong>' : '' ?>.
+                <?php elseif ($cards['overdue'] > 0): ?>
+                    <strong class="text-white"><?= e($cards['overdue']) ?> document<?= $cards['overdue'] === 1 ? ' is' : 's are' ?> overdue</strong> in your department.
+                <?php else: ?>
+                    You are all caught up. Nothing is waiting for your department.
+                <?php endif; ?>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <?php if ($user['role'] === 'admin'): ?>
+                <a class="btn btn-hero-ghost" href="<?= e(url('/')) ?>"><i class="bi bi-globe" aria-hidden="true"></i> University view</a>
+            <?php endif; ?>
+            <a class="btn btn-hero-ghost" href="<?= e(url('/scan')) ?>"><i class="bi bi-qr-code-scan" aria-hidden="true"></i> Scan QR</a>
+            <a class="btn btn-light" href="<?= e(url('/documents/create')) ?>"><i class="bi bi-plus-lg" aria-hidden="true"></i> Register document</a>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <?php if ($user['role'] === 'admin'): ?>
-            <a class="btn btn-sm btn-outline-secondary" href="<?= e(url('/')) ?>"><i class="bi bi-globe" aria-hidden="true"></i> University view</a>
-        <?php endif; ?>
-        <a class="btn btn-sm btn-primary" href="<?= e(url('/documents/create')) ?>"><i class="bi bi-plus-lg" aria-hidden="true"></i> Register document</a>
-    </div>
-</div>
+</section>
 
 <div class="row g-3 mb-4 stat-grid">
     <div class="col-6 col-md-4 col-xl"><?= partial('partials/stat-card', ['label' => 'Incoming', 'value' => $cards['incoming'], 'icon' => 'inbox', 'href' => '/documents?tab=incoming', 'tone' => 'warning', 'hint' => $stuckIncoming > 0 ? "$stuckIncoming waiting over {$alertHours} h" : 'Awaiting our receipt']) ?></div>

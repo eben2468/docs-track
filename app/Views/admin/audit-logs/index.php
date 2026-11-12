@@ -18,14 +18,17 @@ $actionTone = static fn (string $action): string => match (true) {
     default => 'text-bg-secondary',
 };
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0">Audit logs</h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0">Audit logs</h1>
+        <p>Every sign-in, document action and admin change, permanently recorded.</p>
+    </div>
     <span class="small text-body-secondary"><i class="bi bi-lock" aria-hidden="true"></i> Read-only: entries can never be edited or deleted.</span>
 </div>
 
 <form class="card card-body shadow-sm mb-3" method="get" action="<?= e(url('/admin/audit-logs')) ?>">
     <div class="row g-2 align-items-end">
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-xl-4">
             <label for="action" class="form-label small">Action</label>
             <select class="form-select" id="action" name="action">
                 <option value="">All actions</option>
@@ -38,23 +41,23 @@ $actionTone = static fn (string $action): string => match (true) {
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-xl-4">
             <label for="user" class="form-label small">User</label>
             <input type="search" class="form-control" id="user" name="user" value="<?= e($filters['user'] ?? '') ?>" placeholder="Name, email or staff ID">
         </div>
-        <div class="col-md-4 col-lg-2">
+        <div class="col-md-6 col-xl-4">
             <label for="document" class="form-label small">Tracking no.</label>
             <input type="search" class="form-control font-monospace" id="document" name="document" value="<?= e($filters['document'] ?? '') ?>">
         </div>
-        <div class="col-md-4 col-lg-2">
+        <div class="col-md-6 col-xl-4">
             <label for="ip" class="form-label small">IP address</label>
             <input type="search" class="form-control" id="ip" name="ip" value="<?= e($filters['ip'] ?? '') ?>">
         </div>
-        <div class="col-6 col-md-2 col-lg-1">
+        <div class="col-6 col-xl-4">
             <label for="from" class="form-label small">From</label>
             <input type="date" class="form-control" id="from" name="from" value="<?= e($filters['from'] ?? '') ?>">
         </div>
-        <div class="col-6 col-md-2 col-lg-1">
+        <div class="col-6 col-xl-4">
             <label for="to" class="form-label small">To</label>
             <input type="date" class="form-control" id="to" name="to" value="<?= e($filters['to'] ?? '') ?>">
         </div>

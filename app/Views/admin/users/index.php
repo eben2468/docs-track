@@ -6,8 +6,11 @@
  */
 $selfId = (int) (auth()['id'] ?? 0);
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0">Users</h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0">Users</h1>
+        <p>Staff accounts, roles and departments. Deactivate rather than delete.</p>
+    </div>
     <div class="d-flex gap-2">
         <a class="btn btn-outline-primary" href="<?= e(url('/admin/users/import')) ?>"><i class="bi bi-upload" aria-hidden="true"></i> Import CSV</a>
         <a class="btn btn-primary" href="<?= e(url('/admin/users/create')) ?>"><i class="bi bi-person-plus" aria-hidden="true"></i> New user</a>
@@ -76,8 +79,13 @@ $selfId = (int) (auth()['id'] ?? 0);
                 $locked = $u['locked_until'] !== null && strtotime((string) $u['locked_until']) > time(); ?>
                 <tr>
                     <td>
-                        <div class="fw-semibold"><?= e($u['full_name']) ?></div>
-                        <div class="small text-body-secondary"><?= e($u['email']) ?></div>
+                        <div class="user-cell">
+                            <span class="app-avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr((string) $u['full_name'], 0, 1))) ?></span>
+                            <div class="min-w-0">
+                                <div class="fw-semibold"><?= e($u['full_name']) ?></div>
+                                <div class="small text-body-secondary text-truncate"><?= e($u['email']) ?></div>
+                            </div>
+                        </div>
                     </td>
                     <td class="d-none d-md-table-cell font-monospace small"><?= e($u['staff_id']) ?></td>
                     <td class="d-none d-lg-table-cell"><?= e($u['department_name']) ?></td>

@@ -240,6 +240,54 @@
         poll();
     }
 
+    /* Top-bar search: "/" focuses it; on phones the search icon opens it below the bar. */
+    var search = document.getElementById('appSearch');
+    if (search) {
+        var searchInput = search.querySelector('input[type="search"]');
+        var searchToggle = document.querySelector('[data-search-toggle]');
+        var openSearch = function (open) {
+            search.classList.toggle('is-open', open);
+            if (searchToggle) {
+                searchToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+            if (open) {
+                searchInput.focus();
+            }
+        };
+        if (searchToggle) {
+            searchToggle.addEventListener('click', function () {
+                openSearch(!search.classList.contains('is-open'));
+            });
+        }
+        document.addEventListener('keydown', function (event) {
+            var tag = (event.target.tagName || '').toLowerCase();
+            var typing = tag === 'input' || tag === 'textarea' || tag === 'select' || event.target.isContentEditable;
+            if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                event.preventDefault();
+                openSearch(true);
+            } else if (event.key === 'Escape' && search.classList.contains('is-open')) {
+                openSearch(false);
+            }
+        });
+    }
+
+    /* Show/hide password: <button data-toggle-password="inputId">. */
+    document.querySelectorAll('[data-toggle-password]').forEach(function (button) {
+        var input = document.getElementById(button.getAttribute('data-toggle-password'));
+        if (!input) {
+            return;
+        }
+        button.addEventListener('click', function () {
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            var icon = button.querySelector('.bi');
+            if (icon) {
+                icon.className = 'bi ' + (show ? 'bi-eye-slash' : 'bi-eye');
+            }
+        });
+    });
+
     /* Colour pickers: show the hex value next to the swatch. */
     document.querySelectorAll('input[type="color"]').forEach(function (input) {
         var label = input.parentElement.querySelector('[data-color-value]');

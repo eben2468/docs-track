@@ -7,8 +7,11 @@
  * @var int $unreadCount
  */
 ?>
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="h4 mb-0">Notifications</h1>
+<div class="page-header">
+    <div>
+        <h1 class="h4 mb-0">Notifications</h1>
+        <p>Updates about documents sent to you, received, returned or overdue.</p>
+    </div>
     <?php if ($unreadCount > 0): ?>
         <form method="post" action="<?= e(url('/notifications/read-all')) ?>">
             <?= csrf_field() ?>

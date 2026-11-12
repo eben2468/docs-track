@@ -52,13 +52,13 @@ foreach ($history as $m) {
                             <?= e($m['to_department_name']) ?>
                         </div>
                         <div class="d-flex flex-wrap gap-1">
-                            <?php if ($overdue): ?><span class="badge text-bg-danger"><i class="bi bi-alarm" aria-hidden="true"></i> Overdue</span><?php endif; ?>
+                            <?php if ($overdue): ?><span class="status-pill status-overdue"><i class="bi bi-alarm" aria-hidden="true"></i> Overdue</span><?php endif; ?>
                             <?php if ($open): ?>
-                                <span class="badge text-bg-warning">Awaiting receipt</span>
+                                <span class="status-pill status-in_transit">Awaiting receipt</span>
                             <?php elseif ($recalled): ?>
-                                <span class="badge text-bg-secondary">Recalled</span>
+                                <span class="status-pill status-draft">Recalled</span>
                             <?php else: ?>
-                                <span class="badge text-bg-primary">Received</span>
+                                <span class="status-pill status-received">Received</span>
                             <?php endif; ?>
                         </div>
                     </div>
