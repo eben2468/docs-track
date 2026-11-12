@@ -92,3 +92,24 @@ $numberField = static function (string $key, string $label, string $help, int $m
         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg" aria-hidden="true"></i> Save settings</button>
     </div>
 </form>
+
+<div class="card shadow-sm mt-4 form-narrow">
+    <div class="card-header bg-body"><h2 class="h6 mb-0">Email delivery</h2></div>
+    <div class="card-body">
+        <p class="small text-body-secondary">
+            SMTP settings come from the server's <code>.env</code> file (MAIL_*). Current transport:
+            <strong><?= e(config('mail.transport') === 'log' ? 'log file (storage/logs/mail.log)' : 'SMTP ' . config('mail.host') . ':' . config('mail.port')) ?></strong>.
+            Send a test to check they work; it is sent immediately, not queued.
+        </p>
+        <form method="post" action="<?= e(url('/admin/settings/test-email')) ?>" novalidate>
+            <?= csrf_field() ?>
+            <label for="test_email" class="form-label">Send a test email to</label>
+            <div class="input-group has-validation">
+                <input type="email" class="form-control<?= invalid('test_email') ?>" id="test_email" name="test_email" maxlength="150" required
+                       value="<?= e(old('test_email', auth()['email'] ?? '')) ?>">
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-envelope-check" aria-hidden="true"></i> Send test email</button>
+                <?= feedback('test_email') ?>
+            </div>
+        </form>
+    </div>
+</div>

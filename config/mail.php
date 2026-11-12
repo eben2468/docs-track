@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    // "smtp" sends through the server below; "log" writes emails to storage/logs/mail.log (local testing).
+    'transport' => env('MAIL_TRANSPORT', 'smtp') === 'log' ? 'log' : 'smtp',
     'host' => env('MAIL_HOST', 'smtp.example.com'),
     'port' => (int) env('MAIL_PORT', 587),
     'username' => (string) env('MAIL_USERNAME', ''),

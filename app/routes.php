@@ -19,6 +19,7 @@ use App\Controllers\SearchController;
 use App\Controllers\TrackController;
 use App\Controllers\HomeController;
 use App\Controllers\MovementController;
+use App\Controllers\NotificationController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\ProfileController;
 use App\Middleware\AuthMiddleware;
@@ -85,6 +86,13 @@ return static function (Router $router): void {
             $router->post('/documents/{id:\d+}/recall', [MovementController::class, 'recall']);
             $router->post('/documents/{id:\d+}/complete', [MovementController::class, 'complete']);
             $router->get('/api/departments/{id:\d+}/users', [DepartmentUserController::class, 'index']);
+
+            // Notifications (FR-9).
+            $router->get('/notifications', [NotificationController::class, 'index']);
+            $router->post('/notifications/read-all', [NotificationController::class, 'readAll']);
+            $router->get('/notifications/{id:\d+}/open', [NotificationController::class, 'open']);
+            $router->post('/notifications/{id:\d+}/read', [NotificationController::class, 'read']);
+            $router->get('/api/notifications/unread-count', [NotificationController::class, 'unreadCount']);
             $router->post('/documents/{id:\d+}/attachments', [DocumentController::class, 'attachments']);
             $router->get('/attachments/{id:\d+}/download', [AttachmentController::class, 'download']);
             $router->post('/attachments/{id:\d+}/visibility', [AttachmentController::class, 'visibility'], ['role:admin']);
@@ -126,6 +134,7 @@ return static function (Router $router): void {
 
                 $router->get('/settings', [SettingController::class, 'edit']);
                 $router->post('/settings', [SettingController::class, 'update']);
+                $router->post('/settings/test-email', [SettingController::class, 'testEmail']);
             });
         });
     });

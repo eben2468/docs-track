@@ -155,7 +155,8 @@ final class MovementService
                 $documentId,
                 'received',
                 sprintf('%s was received by %s (%s).', $this->label($document), $user['full_name'], $this->departmentName((int) $movement['to_department_id'])),
-                (int) $user['id']
+                (int) $user['id'],
+                'received by ' . $this->departmentName((int) $movement['to_department_id'])
             );
         });
     }
@@ -232,7 +233,8 @@ final class MovementService
                 $documentId,
                 'recalled',
                 sprintf('%s was recalled by %s and will not arrive. Reason: %s', $this->label($document), $user['full_name'], $reason),
-                (int) $user['id']
+                (int) $user['id'],
+                'recalled by ' . $this->departmentName((int) $movement['from_department_id'])
             );
         });
     }
@@ -270,7 +272,8 @@ final class MovementService
                 $documentId,
                 'completed',
                 sprintf('%s was marked completed by %s (%s).', $this->label($document), $user['full_name'], $this->departmentName((int) $document['current_department_id'])),
-                (int) $user['id']
+                (int) $user['id'],
+                'completed at ' . $this->departmentName((int) $document['current_department_id'])
             );
         });
     }
@@ -394,10 +397,11 @@ final class MovementService
             $note
         );
         $type = $action === 'return' ? 'returned' : 'incoming';
+        $headline = $verb . ' to ' . $toDepartment['name'];
         if ($toUserId !== null) {
-            $this->notifications->notify($toUserId, (int) $document['id'], $type, $message, (int) $user['id']);
+            $this->notifications->notify($toUserId, (int) $document['id'], $type, $message, (int) $user['id'], $headline);
         } else {
-            $this->notifications->notifyDepartment($toDepartmentId, (int) $document['id'], $type, $message, (int) $user['id']);
+            $this->notifications->notifyDepartment($toDepartmentId, (int) $document['id'], $type, $message, (int) $user['id'], $headline);
         }
 
         return $movementId;

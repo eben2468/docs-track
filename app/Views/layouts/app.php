@@ -125,10 +125,29 @@ $renderItem = static function (array $item) use ($isActive): string {
             </form>
 
             <div class="ms-auto d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-link app-topbar-icon" disabled
-                        title="Notifications are available in a later release" aria-label="Notifications">
-                    <i class="bi bi-bell" aria-hidden="true"></i>
-                </button>
+                <?php if ($user !== null): $unread = unread_notification_count(); ?>
+                    <div class="dropdown" id="notifBell" data-poll-url="<?= e(url('/api/notifications/unread-count')) ?>">
+                        <button type="button" class="btn btn-link app-topbar-icon position-relative" data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications">
+                            <i class="bi bi-bell" aria-hidden="true"></i>
+                            <span class="badge rounded-pill text-bg-danger notif-badge<?= $unread > 0 ? '' : ' d-none' ?>" data-notif-count><?= $unread > 99 ? '99+' : e($unread) ?></span>
+                            <span class="visually-hidden" data-notif-label><?= e($unread) ?> unread</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow notif-menu p-0">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <strong class="small">Notifications</strong>
+                                <form method="post" action="<?= e(url('/notifications/read-all')) ?>" data-notif-read-all>
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-link btn-sm p-0">Mark all read</button>
+                                </form>
+                            </div>
+                            <div class="notif-list" data-notif-list>
+                                <div class="px-3 py-3 small text-body-secondary">Loading…</div>
+                            </div>
+                            <a class="d-block text-center small py-2 border-top" href="<?= e(url('/notifications')) ?>">View all notifications</a>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($user !== null): ?>
                     <div class="dropdown">

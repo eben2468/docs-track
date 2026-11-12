@@ -163,6 +163,83 @@
         }
     });
 
+    /*
+     * Notification bell: poll the unread count (and latest five) every 60 seconds while the
+     * tab is visible, and render the dropdown list. All text is set with textContent.
+     */
+    var bell = document.getElementById('notifBell');
+    if (bell && window.fetch) {
+        var pollUrl = bell.getAttribute('data-poll-url');
+        var badge = bell.querySelector('[data-notif-count]');
+        var label = bell.querySelector('[data-notif-label]');
+        var list = bell.querySelector('[data-notif-list]');
+        var icons = {
+            incoming: 'inbox', received: 'box-arrow-in-down', returned: 'arrow-return-left', recalled: 'arrow-counterclockwise',
+            completed: 'check2-circle', unreceived_alert: 'hourglass-split', overdue_alert: 'alarm'
+        };
+
+        var render = function (data) {
+            var count = data.count || 0;
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.classList.toggle('d-none', count === 0);
+            label.textContent = count + ' unread';
+
+            list.innerHTML = '';
+            if (!data.latest || data.latest.length === 0) {
+                var empty = document.createElement('div');
+                empty.className = 'px-3 py-3 small text-body-secondary';
+                empty.textContent = 'No notifications yet.';
+                list.appendChild(empty);
+                return;
+            }
+            data.latest.forEach(function (n) {
+                var a = document.createElement('a');
+                a.href = n.url;
+                a.className = 'notif-item d-flex gap-2 px-3 py-2' + (n.is_read ? '' : ' is-unread');
+                var icon = document.createElement('i');
+                icon.className = 'bi bi-' + (icons[n.type] || 'bell') + ' notif-icon notif-' + n.type;
+                icon.setAttribute('aria-hidden', 'true');
+                var body = document.createElement('div');
+                body.className = 'min-w-0';
+                var msg = document.createElement('div');
+                msg.className = 'notif-message';
+                msg.textContent = n.message;
+                var meta = document.createElement('div');
+                meta.className = 'small text-body-secondary';
+                meta.textContent = n.time + (n.tracking_no ? ' · ' + n.tracking_no : '');
+                body.appendChild(msg);
+                body.appendChild(meta);
+                a.appendChild(icon);
+                a.appendChild(body);
+                list.appendChild(a);
+            });
+        };
+
+        var poll = function () {
+            if (document.hidden) {
+                return;
+            }
+            fetch(pollUrl, {headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, credentials: 'same-origin'})
+                .then(function (r) {
+                    if (r.status === 401) {
+                        window.clearInterval(timer);
+                        throw new Error('signed out');
+                    }
+                    return r.json();
+                })
+                .then(render)
+                .catch(function () { /* keep the last known state */ });
+        };
+
+        var timer = window.setInterval(poll, 60000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                poll();
+            }
+        });
+        poll();
+    }
+
     /* Colour pickers: show the hex value next to the swatch. */
     document.querySelectorAll('input[type="color"]').forEach(function (input) {
         var label = input.parentElement.querySelector('[data-color-value]');

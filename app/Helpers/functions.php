@@ -374,6 +374,43 @@ if (!function_exists('incoming_count')) {
     }
 }
 
+if (!function_exists('unread_notification_count')) {
+    /**
+     * Unread notifications for the signed-in user (bell badge).
+     */
+    function unread_notification_count(): int
+    {
+        $id = Auth::id();
+        if ($id === null) {
+            return 0;
+        }
+        try {
+            return (new \App\Models\Notification())->unreadCount($id);
+        } catch (\PDOException) {
+            return 0;
+        }
+    }
+}
+
+if (!function_exists('notification_icon')) {
+    /**
+     * Bootstrap Icons name for a notification type.
+     */
+    function notification_icon(string $type): string
+    {
+        return match ($type) {
+            'incoming' => 'inbox',
+            'received' => 'box-arrow-in-down',
+            'returned' => 'arrow-return-left',
+            'recalled' => 'arrow-counterclockwise',
+            'completed' => 'check2-circle',
+            'unreceived_alert' => 'hourglass-split',
+            'overdue_alert' => 'alarm',
+            default => 'bell',
+        };
+    }
+}
+
 if (!function_exists('now')) {
     /**
      * Current time in the application timezone (Africa/Accra).

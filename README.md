@@ -64,6 +64,16 @@ gazette (Admin → Holidays) before relying on due-date calculations.
   `APP_URL=http://localhost/docs-track` in `.env`. The root `.htaccess` routes every request into
   `public/`, so `.env`, `storage/` and `vendor/` are never served.
 
+### Email
+
+Emails are queued in `email_queue` and delivered by `cron/send_emails.php`.
+
+- **Local, no SMTP:** set `MAIL_TRANSPORT=log` in `.env`; emails are written to `storage/logs/mail.log`.
+- **Local with a test inbox (Mailtrap or similar):** set `MAIL_TRANSPORT=smtp` and the sandbox's
+  `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION=tls`.
+- Run the sender by hand with `php cron/send_emails.php`, or check settings with
+  Admin → Settings → **Send test email** (sent immediately, not queued).
+
 ## Commands
 
 | Task | Command |
@@ -74,7 +84,8 @@ gazette (Admin → Holidays) before relying on due-date calculations.
 | Run pending migrations | `php database/migrate.php` |
 | Rebuild DB + seed data | `php database/migrate.php --fresh --seed` (refused in production without `--force`) |
 | Seed only (safe to repeat) | `php database/migrate.php --seed` |
-| Cron (Phase 6/7) | `php cron/check_alerts.php`, `php cron/send_emails.php` |
+| Send queued emails (every 2 min) | `php cron/send_emails.php` |
+| Alerts (Phase 7) | `php cron/check_alerts.php` |
 
 ## Project layout
 

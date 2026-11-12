@@ -391,6 +391,46 @@
 
 .timeline-meta dd { margin: 0; }
 
+/* ---------- Notifications (FR-9) ---------- */
+
+.notif-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: .6rem;
+    transform: translate(25%, -10%);
+}
+
+.notif-menu { width: min(360px, calc(100vw - 2rem)); }
+
+.notif-list { max-height: 360px; overflow-y: auto; }
+
+.notif-item { color: var(--bs-body-color); text-decoration: none; border-bottom: 1px solid var(--bs-border-color-translucent); font-size: .85rem; }
+
+.notif-item:hover { background: var(--bs-tertiary-bg); }
+
+.notif-item.is-unread { background: rgba(var(--bs-primary-rgb), .06); }
+
+.notif-item.is-unread .notif-message { font-weight: 600; }
+
+.notif-message { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.notif-row.is-unread { background: rgba(var(--bs-primary-rgb), .05); box-shadow: inset 3px 0 0 var(--dts-primary); }
+
+.notif-link { color: var(--bs-body-color); text-decoration: none; }
+
+.notif-link:hover { text-decoration: underline; }
+
+.notif-icon { color: var(--dts-primary); }
+
+.notif-incoming { color: var(--bs-warning-text-emphasis); }
+
+.notif-received, .notif-completed { color: var(--bs-success); }
+
+.notif-recalled, .notif-returned { color: var(--bs-secondary); }
+
+.notif-unreceived_alert, .notif-overdue_alert { color: var(--bs-danger); }
+
 /* ---------- Public tracking & scanner ---------- */
 
 .track-page { max-width: 640px; }
