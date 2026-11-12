@@ -17,7 +17,7 @@ $hasLogo = setting('logo_path') !== '';
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="<?= e(setting('primary_color')) ?>">
     <title><?= e($pageTitle) ?></title>
-    <link rel="icon" href="<?= e(asset('img/favicon.svg')) ?>" type="image/svg+xml">
+    <?= favicon_tags() ?>
     <link rel="preload" href="<?= e(asset('fonts/inter-latin-wght-normal.woff2')) ?>" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap.min.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap-icons.min.css')) ?>">

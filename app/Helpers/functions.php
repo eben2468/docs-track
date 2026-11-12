@@ -374,6 +374,27 @@ if (!function_exists('incoming_count')) {
     }
 }
 
+if (!function_exists('favicon_tags')) {
+    /**
+     * <link> tags for the browser tab / home-screen icon: the logo uploaded in Admin →
+     * Settings when there is one (versioned so a new logo shows at once), otherwise the
+     * built-in SVG icon. Returns HTML (already escaped).
+     */
+    function favicon_tags(): string
+    {
+        $logo = setting('logo_path');
+        if ($logo !== '') {
+            // A small square icon generated from the logo (see SettingService::faviconFile()).
+            $href = e(url('/branding/favicon', ['v' => substr(md5($logo), 0, 8)]));
+
+            return '<link rel="icon" href="' . $href . '" sizes="180x180">' . "\n    "
+                . '<link rel="apple-touch-icon" href="' . $href . '">' . "\n";
+        }
+
+        return '<link rel="icon" href="' . e(asset('img/favicon.svg')) . '" type="image/svg+xml">' . "\n";
+    }
+}
+
 if (!function_exists('current_department_name')) {
     /**
      * Name of the signed-in user's department ('' for guests or if unavailable).

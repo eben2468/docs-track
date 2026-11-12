@@ -68,7 +68,7 @@ $renderItem = static function (array $item) use ($isActive): string {
     <meta name="theme-color" content="<?= e(setting('primary_color')) ?>">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <title><?= e($pageTitle) ?></title>
-    <link rel="icon" href="<?= e(asset('img/favicon.svg')) ?>" type="image/svg+xml">
+    <?= favicon_tags() ?>
     <link rel="preload" href="<?= e(asset('fonts/inter-latin-wght-normal.woff2')) ?>" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap.min.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/bootstrap-icons.min.css')) ?>">

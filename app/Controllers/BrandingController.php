@@ -24,7 +24,19 @@ final class BrandingController extends Controller
 
     public function logo(Request $request): Response
     {
-        $file = (new SettingService())->logoFile() ?? throw new HttpException(404);
+        return $this->image((new SettingService())->logoFile() ?? throw new HttpException(404));
+    }
+
+    /**
+     * GET /branding/favicon: the logo resized to a small square icon (browser tab, home screen).
+     */
+    public function favicon(Request $request): Response
+    {
+        return $this->image((new SettingService())->faviconFile() ?? throw new HttpException(404));
+    }
+
+    private function image(string $file): Response
+    {
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file);
 
         return (new Response((string) file_get_contents($file)))

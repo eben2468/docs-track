@@ -111,6 +111,56 @@ final class SettingService
     }
 
     /**
+     * A small square PNG (180×180) made from the logo, for the browser tab and home-screen
+     * icon. Created on first request and kept next to the logo; null when there is no logo.
+     * Falls back to the logo itself if the GD extension is not available.
+     */
+    public function faviconFile(): ?string
+    {
+        $logo = $this->logoFile();
+        if ($logo === null) {
+            return null;
+        }
+
+        $icon = preg_replace('/\.(png|jpg|webp)$/', '-icon.png', $logo);
+        if (is_file($icon) && filemtime($icon) >= filemtime($logo)) {
+            return $icon;
+        }
+
+        return self::makeSquareIcon($logo, $icon, 180) ? $icon : $logo;
+    }
+
+    /**
+     * Resize an image to fit a transparent square canvas. Returns false if GD is missing
+     * or the image cannot be read.
+     */
+    public static function makeSquareIcon(string $source, string $target, int $size): bool
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return false;
+        }
+        $image = @imagecreatefromstring((string) file_get_contents($source));
+        if ($image === false) {
+            return false;
+        }
+
+        [$w, $h] = [imagesx($image), imagesy($image)];
+        $inner = (int) round($size * 0.94);
+        $scale = min($inner / $w, $inner / $h);
+        [$nw, $nh] = [max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale))];
+
+        $canvas = imagecreatetruecolor($size, $size);
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        imagefill($canvas, 0, 0, imagecolorallocatealpha($canvas, 0, 0, 0, 127));
+        imagealphablending($canvas, true);
+        imagecopyresampled($canvas, $image, intdiv($size - $nw, 2), intdiv($size - $nh, 2), 0, 0, $nw, $nh, $w, $h);
+        imagesavealpha($canvas, true);
+
+        return imagepng($canvas, $target, 9);
+    }
+
+    /**
      * CSS custom properties for the configured primary colour (served as /branding/theme).
      */
     public static function themeCss(string $hex): string
@@ -167,7 +217,9 @@ final class SettingService
     private function deleteLogoFile(string $relative): void
     {
         if (preg_match('#^' . self::LOGO_DIR . '/[a-f0-9]{32}\.(png|jpg|webp)$#', $relative) === 1) {
-            @unlink(storage_path('uploads/' . $relative));
+            $file = storage_path('uploads/' . $relative);
+            @unlink($file);
+            @unlink((string) preg_replace('/\.(png|jpg|webp)$/', '-icon.png', $file));
         }
     }
 }
