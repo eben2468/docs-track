@@ -15,6 +15,8 @@ $initial = $user !== null ? mb_strtoupper(mb_substr((string) $user['full_name'],
 $departmentName = $user !== null ? current_department_name() : '';
 
 $currentTab = is_string($_GET['tab'] ?? null) ? $_GET['tab'] : '';
+// Desktop sidebar hidden/shown preference (set by app.js), applied server-side so the page doesn't flicker.
+$sidebarCollapsed = ($_COOKIE['dts_sidebar'] ?? '') === 'collapsed';
 $incomingCount = $user !== null ? incoming_count() : 0;
 
 /*
@@ -75,7 +77,7 @@ $renderItem = static function (array $item) use ($isActive): string {
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="stylesheet" href="<?= e(url('/branding/theme', ['v' => substr(md5(setting('primary_color')), 0, 8)])) ?>">
 </head>
-<body class="app-body">
+<body class="app-body<?= $sidebarCollapsed ? ' sidebar-collapsed' : '' ?>">
 <a class="visually-hidden-focusable app-skip-link" href="#main">Skip to content</a>
 <div class="app-shell">
     <aside class="app-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="appSidebar" aria-label="Main navigation">
@@ -132,6 +134,12 @@ $renderItem = static function (array $item) use ($isActive): string {
             <button class="app-topbar-toggle d-lg-none" type="button" data-bs-toggle="offcanvas"
                     data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Open menu">
                 <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+            <button class="app-topbar-toggle d-none d-lg-inline-flex" type="button" data-sidebar-toggle
+                    aria-controls="appSidebar" aria-expanded="<?= $sidebarCollapsed ? 'false' : 'true' ?>"
+                    aria-label="<?= $sidebarCollapsed ? 'Show menu' : 'Hide menu' ?>"
+                    title="<?= $sidebarCollapsed ? 'Show menu' : 'Hide menu' ?>">
+                <i class="bi <?= $sidebarCollapsed ? 'bi-layout-sidebar' : 'bi-layout-sidebar-inset' ?>" aria-hidden="true"></i>
             </button>
             <a class="app-brand app-topbar-brand d-lg-none" href="<?= e(url('/')) ?>" aria-label="Dashboard">
                 <span class="app-brand-mark" aria-hidden="true">

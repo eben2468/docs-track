@@ -628,7 +628,17 @@ form.card.card-body { background: var(--dts-surface); }
         flex-shrink: 0;
         visibility: visible !important;
         transform: none !important;
+        transition: margin-left .25s ease, visibility 0s;
     }
+
+    /* Desktop sidebar hidden with the topbar toggle: slide it out and show the topbar logo instead. */
+    .sidebar-collapsed .app-sidebar {
+        margin-left: calc(-1 * var(--dts-sidebar-width));
+        visibility: hidden !important;
+        transition: margin-left .25s ease, visibility 0s .25s;
+    }
+
+    .sidebar-collapsed .app-topbar-brand { display: inline-flex !important; }
 
     .app-topbar { padding: .6rem 2rem; }
 

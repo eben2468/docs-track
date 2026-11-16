@@ -29,6 +29,29 @@
     });
 
     /*
+     * Desktop sidebar show/hide (the [data-sidebar-toggle] button). The choice is saved in a
+     * cookie so the server renders the next page in the same state (no flicker).
+     */
+    document.addEventListener('click', function (event) {
+        var toggle = event.target.closest('[data-sidebar-toggle]');
+        if (!toggle) {
+            return;
+        }
+        var collapsed = document.body.classList.toggle('sidebar-collapsed');
+        var label = collapsed ? 'Show menu' : 'Hide menu';
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('aria-label', label);
+        toggle.setAttribute('title', label);
+        var icon = toggle.querySelector('.bi');
+        if (icon) {
+            icon.classList.toggle('bi-layout-sidebar', collapsed);
+            icon.classList.toggle('bi-layout-sidebar-inset', !collapsed);
+        }
+        document.cookie = 'dts_sidebar=' + (collapsed ? 'collapsed' : 'open') + '; path=/; max-age=31536000; SameSite=Lax'
+            + (location.protocol === 'https:' ? '; Secure' : '');
+    });
+
+    /*
      * Forms with data-confirm="Question?" ask in a Bootstrap modal before submitting.
      * Optional data-confirm-button (label) and data-confirm-variant (danger|primary|warning).
      * Without JavaScript or the modal, the form simply submits.
