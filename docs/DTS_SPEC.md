@@ -492,9 +492,9 @@ replaces a per-row "latest received movement" subquery in lists, dashboards and 
 `notifications (user_id, created_at)`.
 
 ### 8.1 Seed data
-- **Departments (sample):** Office of the Vice-Chancellor (VC), Registry (REG), Bursary/Finance (BUR), Human Resources (HR), Admissions (ADM), Academic Affairs (ACA), Faculty of Science (FOS), Faculty of Business (FOB), ICT Directorate (ICT), Library (LIB), Chaplaincy (CHP), Students' Affairs (SAF). Edit these to match VVU's actual structure.
+- **Departments:** VVU's 35 departments (Audit, Chaplaincy, Finance, Accounts, HRM, … Computer Science Department); see `database/migrations/018_replace_departments.sql` for the full list and codes.
 - **Document types:** Memo (3), Letter (3), Payment Voucher (2), Transcript Request (5), Leave Request (2), Contract (5), Student Petition (5), Other (3).
-- **Users:** 1 Admin, plus 1 HOD and 2 staff in REG, BUR and ICT for testing. Default password `ChangeMe@123` for dev only.
+- **Users:** 1 Admin, plus 1 HOD and 2 staff in REG, FIN and ITS for testing. Default password `ChangeMe@123` for dev only.
 - **Settings:** `unreceived_alert_hours=24`, `alert_repeat_hours=24`, `default_sla_days=3`, `max_upload_mb=10`, `app_name=VVU Document Tracking System`.
 - **Holidays:** Ghana public holidays for the current year.
 

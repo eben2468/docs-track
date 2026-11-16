@@ -43,13 +43,13 @@ Seeded accounts use the reserved `.test` email domain and are **not** created wh
 
 | Role | Username | Staff ID | Department |
 |---|---|---|---|
-| Admin | admin | VVU-0001 | ICT |
-| HOD | reg.hod | VVU-1001 | Registry (REG) |
-| Staff | reg.staff1, reg.staff2 | VVU-1002, VVU-1003 | Registry (REG) |
-| HOD | bur.hod | VVU-2001 | Bursary (BUR) |
-| Staff | bur.staff1, bur.staff2 | VVU-2002, VVU-2003 | Bursary (BUR) |
-| HOD | ict.hod | VVU-3001 | ICT |
-| Staff | ict.staff1, ict.staff2 | VVU-3002, VVU-3003 | ICT |
+| Admin | admin | VVU-0001 | ITS |
+| HOD | reg.hod | VVU-1001 | Registrar (REG) |
+| Staff | reg.staff1, reg.staff2 | VVU-1002, VVU-1003 | Registrar (REG) |
+| HOD | fin.hod | VVU-2001 | Finance (FIN) |
+| Staff | fin.staff1, fin.staff2 | VVU-2002, VVU-2003 | Finance (FIN) |
+| HOD | its.hod | VVU-3001 | ITS |
+| Staff | its.staff1, its.staff2 | VVU-3002, VVU-3003 | ITS |
 
 Seeded Ghana holidays include provisional Eid dates; confirm all holiday dates against the official
 gazette (Admin → Holidays) before relying on due-date calculations.
@@ -84,7 +84,7 @@ Emails are queued in `email_queue` and delivered by `cron/send_emails.php`.
 | Run pending migrations | `php database/migrate.php` |
 | Rebuild DB + seed data | `php database/migrate.php --fresh --seed` (refused in production without `--force`) |
 | Seed reference data (safe to repeat) | `php database/migrate.php --seed` |
-| Create the first administrator | `php database/create_admin.php --email=… --name="…" --staff-id=… --department=ICT` |
+| Create the first administrator | `php database/create_admin.php --email=… --name="…" --staff-id=… --department=ITS` |
 | Send queued emails (every 2 min) | `php cron/send_emails.php` |
 | Unreceived / overdue alerts (every 30 min) | `php cron/check_alerts.php` |
 | Daily backup | `deploy/backup.sh` |
@@ -152,8 +152,8 @@ the password is stored encrypted with `APP_KEY` (changing `APP_KEY` means re-ent
 
 ```bash
 php database/migrate.php --seed           # tables + departments, document types, settings, holidays (no test users in production)
-php database/create_admin.php --username=it.admin --email=it.admin@vvu.edu.gh --name="ICT Administrator" \
-    --staff-id=VVU-0001 --department=ICT --department-name="ICT Directorate"
+php database/create_admin.php --username=it.admin --email=it.admin@vvu.edu.gh --name="ITS Administrator" \
+    --staff-id=VVU-0001 --department=ITS --department-name="ITS"
 ```
 
 Email must already work (step 2): sign-in codes are emailed. Then sign in with the username, review **Admin → Departments** (the seeded

@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Create (or promote) an administrator account on a fresh server.
  *
  *   php database/create_admin.php --username=jane.doe --email=it@vvu.edu.gh --name="Jane Doe" \
- *       --staff-id=VVU-0001 --department=ICT [--department-name="ICT Directorate"]
+ *       --staff-id=VVU-0001 --department=ITS [--department-name="ITS"]
  *
  * There are no passwords: the admin signs in with the username and a one-time code emailed
  * to the address given, so make sure email (MAIL_* in .env) works. If the department code

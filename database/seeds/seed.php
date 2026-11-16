@@ -91,20 +91,43 @@ $ghanaHolidays = static function (int $year) use ($easterSunday): array {
 
 return static function (Database $db, callable $line) use ($insertIfMissing, $ghanaHolidays): void {
     $db->transaction(static function (Database $db) use ($line, $insertIfMissing, $ghanaHolidays): void {
-        // Departments (sample: edit to match VVU's actual structure).
+        // Departments (kept in sync with migration 018_replace_departments.sql).
         $departments = [
-            ['VC', 'Office of the Vice-Chancellor'],
-            ['REG', 'Registry'],
-            ['BUR', 'Bursary / Finance'],
-            ['HR', 'Human Resources'],
-            ['ADM', 'Admissions'],
-            ['ACA', 'Academic Affairs'],
-            ['FOS', 'Faculty of Science'],
-            ['FOB', 'Faculty of Business'],
-            ['ICT', 'ICT Directorate'],
-            ['LIB', 'Library'],
+            ['AUD', 'Audit'],
             ['CHP', 'Chaplaincy'],
-            ['SAF', "Students' Affairs"],
+            ['FIN', 'Finance'],
+            ['ACC', 'Accounts'],
+            ['HRM', 'HRM (Human Resource Management)'],
+            ['FDS', 'Food Services'],
+            ['STR', 'Stores'],
+            ['RAD', 'Radio'],
+            ['LIB', 'Library Services'],
+            ['PPL', 'Physical Plant'],
+            ['PRC', 'Procurement'],
+            ['REG', 'Registrar'],
+            ['VC', 'VC'],
+            ['PVC', 'Pro VC'],
+            ['DOS', 'Dean of Students'],
+            ['SEC', 'Security'],
+            ['ADM', 'Admissions & Records'],
+            ['ITS', 'ITS'],
+            ['HOR', 'Hall of Residence'],
+            ['UREL', 'University Relations'],
+            ['POST', 'Post Office'],
+            ['TRN', 'Transport'],
+            ['UENT', 'University Enterprises'],
+            ['UFRM', 'University Farms'],
+            ['VEN', 'Ventures'],
+            ['GED', 'General Education'],
+            ['HOS', 'Hospital'],
+            ['BAK', 'Bakery'],
+            ['TRS', 'Treasurer'],
+            ['SOB', 'School of Business'],
+            ['GRD', 'Graduate School'],
+            ['THEO', 'Theology Department'],
+            ['CNS', 'Counselling'],
+            ['BAS', 'Basic School'],
+            ['CSC', 'Computer Science Department'],
         ];
         $inserted = 0;
         foreach ($departments as [$code, $name]) {
@@ -123,7 +146,7 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
         }
         $line(sprintf('  Document types  %d inserted, %d already present', $inserted, count($types) - $inserted));
 
-        // Users: 1 admin + 1 HOD and 2 staff in REG, BUR and ICT, with usernames taken from
+        // Users: 1 admin + 1 HOD and 2 staff in REG, FIN and ITS, with usernames taken from
         // their email (admin, reg.hod, reg.staff1, ...). Dev-only accounts, so never created in
         // production (use database/create_admin.php there). Sign-in codes go to the mail log.
         $deptIds = array_column($db->fetchAll('SELECT id, code FROM departments'), 'id', 'code');
@@ -133,8 +156,8 @@ return static function (Database $db, callable $line) use ($insertIfMissing, $gh
         }
         $passwordHash = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
 
-        $users = $production ? [] : [['VVU-0001', 'System Administrator', 'admin@vvu.test', 'admin', 'ICT']];
-        foreach ($production ? [] : ['REG' => [1, 'Registry'], 'BUR' => [2, 'Bursary'], 'ICT' => [3, 'ICT']] as $code => [$n, $label]) {
+        $users = $production ? [] : [['VVU-0001', 'System Administrator', 'admin@vvu.test', 'admin', 'ITS']];
+        foreach ($production ? [] : ['REG' => [1, 'Registrar'], 'FIN' => [2, 'Finance'], 'ITS' => [3, 'ITS']] as $code => [$n, $label]) {
             $prefix = strtolower($code);
             $users[] = [sprintf('VVU-%d001', $n), "$label HOD", "$prefix.hod@vvu.test", 'hod', $code];
             $users[] = [sprintf('VVU-%d002', $n), "$label Staff 1", "$prefix.staff1@vvu.test", 'staff', $code];
