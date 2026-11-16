@@ -39,6 +39,8 @@ abstract class DatabaseTestCase extends TestCase
                 $migrator = new Migrator($db, dirname(__DIR__) . '/database/migrations', static fn (string $l) => null);
                 $migrator->dropAllTables();
                 $migrator->migrate();
+                // Migration 018 inserts VVU's real departments; tests create their own fixtures.
+                $db->execute('DELETE FROM departments');
                 self::$migrated = true;
             }
         } catch (PDOException $e) {
