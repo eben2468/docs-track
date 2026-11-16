@@ -38,6 +38,14 @@ final class Setting extends Model
     }
 
     /**
+     * Remove a setting (its default then applies).
+     */
+    public function forget(string $key): void
+    {
+        $this->db->execute('DELETE FROM settings WHERE `key` = ?', [$key]);
+    }
+
+    /**
      * All settings as key => value.
      *
      * @return array<string, string|null>

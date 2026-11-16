@@ -143,8 +143,10 @@ Nothing outside `public/` is reachable from the web.
 
 **Production `.env` essentials:** `APP_ENV=production` and `APP_DEBUG=false` (errors are logged to
 `storage/logs/app.log`, visitors see a friendly page); `APP_URL` with `https://` (used in QR codes
-and email links, and makes the session cookie `Secure` with the `__Host-` prefix); real SMTP
-credentials with `MAIL_TRANSPORT=smtp`.
+and email links, and makes the session cookie `Secure` with the `__Host-` prefix); a random
+`APP_KEY` (see `.env.example`); real SMTP credentials with `MAIL_TRANSPORT=smtp`. SMTP settings can
+also be entered later in **Admin → Settings → Email (SMTP)**: values saved there override `.env`, and
+the password is stored encrypted with `APP_KEY` (changing `APP_KEY` means re-entering it).
 
 ### 3. Database and first administrator
 

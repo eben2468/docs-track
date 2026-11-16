@@ -8,6 +8,8 @@ return [
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => rtrim((string) env('APP_URL', 'http://localhost:8000'), '/'),
     'timezone' => env('APP_TIMEZONE', 'Africa/Accra'),
+    // Secret used to encrypt stored secrets (the SMTP password saved in Admin > Settings).
+    'key' => (string) env('APP_KEY', ''),
 
     'session' => [
         'name' => 'vvu_dts_session',

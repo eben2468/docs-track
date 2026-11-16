@@ -125,12 +125,19 @@ final class MailService
     }
 
     /**
-     * The configured transport (SMTP, or the log file when MAIL_TRANSPORT=log).
+     * The configured transport (SMTP, or the log file when the transport is "log"), using
+     * the mail settings saved in Admin > Settings over the MAIL_* values in .env.
      */
     private function transport(): MailTransport
     {
         if ($this->transport === null) {
-            $config = (array) Config::get('mail', []);
+            try {
+                $settings = new SettingService();
+                // The small square icon made from the logo is embedded in the email header.
+                $config = $settings->mailConfig() + ['logo_file' => (string) $settings->faviconFile()];
+            } catch (\PDOException) {
+                $config = (array) Config::get('mail', []);
+            }
             $this->transport = ($config['transport'] ?? 'smtp') === 'log'
                 ? new LogTransport(storage_path('logs/mail.log'))
                 : new SmtpTransport($config);

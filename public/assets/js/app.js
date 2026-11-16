@@ -306,6 +306,27 @@
         tick();
     });
 
+    /* SMTP presets: <button data-mail-preset="host|port|encryption"> fills the mail settings form. */
+    document.querySelectorAll('[data-mail-preset]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var parts = button.getAttribute('data-mail-preset').split('|');
+            var set = function (id, value) {
+                var field = document.getElementById(id);
+                if (field) {
+                    field.value = value;
+                }
+            };
+            set('mail_transport', 'smtp');
+            set('mail_host', parts[0]);
+            set('mail_port', parts[1]);
+            set('mail_encryption', parts[2]);
+            var user = document.getElementById('mail_username');
+            if (user) {
+                user.focus();
+            }
+        });
+    });
+
     /* Colour pickers: show the hex value next to the swatch. */
     document.querySelectorAll('input[type="color"]').forEach(function (input) {
         var label = input.parentElement.querySelector('[data-color-value]');

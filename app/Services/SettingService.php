@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Core\Database;
+use Core\Encrypter;
+use Core\Logger;
 use InvalidArgumentException;
 
 /**
@@ -26,8 +28,18 @@ final class SettingService
 
     public const LOGO_DIR = 'branding';
 
+    /**
+     * Email (SMTP) settings that Admin > Settings can override. Stored as "mail_<key>";
+     * a key with no stored value falls back to the MAIL_* value in .env (config/mail.php).
+     * The password is stored encrypted with APP_KEY.
+     */
+    public const MAIL_KEYS = ['transport', 'host', 'port', 'encryption', 'username', 'password', 'from_address', 'from_name'];
+
     /** @var array<string, string>|null */
     private static ?array $cache = null;
+
+    /** @var array<string, string|null>|null Stored mail_* rows */
+    private static ?array $mailCache = null;
 
     public function __construct(
         private readonly Setting $settings = new Setting(),
@@ -94,6 +106,115 @@ final class SettingService
         if (isset($changes['logo_path']) && $oldLogo !== '') {
             $this->deleteLogoFile($oldLogo);
         }
+    }
+
+    /**
+     * The mail settings in effect: values saved in Settings over the MAIL_* values in .env.
+     * Same keys as config/mail.php, with the password decrypted ('' if it cannot be).
+     *
+     * @return array{transport: string, host: string, port: int, encryption: string, username: string, password: string, from_address: string, from_name: string}
+     */
+    public function mailConfig(): array
+    {
+        $env = (array) config('mail', []);
+        $stored = $this->storedMail();
+        $config = [];
+        foreach (self::MAIL_KEYS as $key) {
+            $config[$key] = (string) ($stored[$key] ?? $env[$key] ?? '');
+        }
+        if (isset($stored['password'])) {
+            $config['password'] = $this->decryptMailPassword((string) $stored['password']) ?? '';
+        }
+        $config['transport'] = $config['transport'] === 'log' ? 'log' : 'smtp';
+        $config['port'] = (int) $config['port'];
+
+        return $config;
+    }
+
+    /**
+     * Mail keys whose value comes from Settings rather than .env.
+     *
+     * @return list<string>
+     */
+    public function mailOverrides(): array
+    {
+        return array_keys($this->storedMail());
+    }
+
+    /**
+     * Where the SMTP password comes from: "saved" (Settings), "unreadable" (saved, but
+     * APP_KEY changed), "env" (.env) or "none".
+     */
+    public function mailPasswordStatus(): string
+    {
+        $stored = $this->storedMail();
+        if (isset($stored['password'])) {
+            return $this->decryptMailPassword((string) $stored['password']) === null ? 'unreadable' : 'saved';
+        }
+
+        return (string) config('mail.password', '') !== '' ? 'env' : 'none';
+    }
+
+    /**
+     * Save the mail settings (all keys except the password are replaced). The password
+     * changes only when a new one is given or $clearPassword is set. Audited without secrets.
+     *
+     * @param array{transport: string, host: string, port: string, encryption: string, username: string, from_address: string, from_name: string} $values
+     * @throws ServiceException when a password is given but APP_KEY is not set
+     */
+    public function updateMail(array $values, ?string $newPassword, bool $clearPassword): void
+    {
+        $before = $this->mailConfig();
+        $values = array_intersect_key($values, array_flip(self::MAIL_KEYS));
+        unset($values['password']);
+
+        $encrypted = null;
+        if ($newPassword !== null) {
+            if (!Encrypter::isConfigured()) {
+                throw new ServiceException('Set APP_KEY in the server\'s .env file before saving an SMTP password (see .env.example).', 'mail_password');
+            }
+            $encrypted = Encrypter::fromConfig()->encrypt($newPassword);
+        }
+
+        $changes = AuditService::diff($before, $values);
+        if ($newPassword !== null) {
+            $changes['password'] = ['(hidden)', '(changed)'];
+        } elseif ($clearPassword && isset($this->storedMail()['password'])) {
+            $changes['password'] = ['(hidden)', '(removed)'];
+        }
+        if ($changes === []) {
+            return;
+        }
+
+        Database::instance()->transaction(function () use ($values, $encrypted, $clearPassword, $changes): void {
+            foreach ($values as $key => $value) {
+                $this->settings->put('mail_' . $key, (string) $value);
+            }
+            if ($encrypted !== null) {
+                $this->settings->put('mail_password', $encrypted);
+            } elseif ($clearPassword) {
+                $this->settings->forget('mail_password');
+            }
+            $this->audit->log('settings.mail_updated', ['changes' => $changes]);
+        });
+        self::$mailCache = null;
+    }
+
+    /**
+     * Remove every saved mail setting so the MAIL_* values in .env apply again.
+     */
+    public function resetMail(): void
+    {
+        if ($this->storedMail() === []) {
+            return;
+        }
+        Database::instance()->transaction(function (): void {
+            foreach (self::MAIL_KEYS as $key) {
+                $this->settings->forget('mail_' . $key);
+            }
+            $this->audit->log('settings.mail_reset', ['keys' => $this->mailOverrides()]);
+        });
+        self::$mailCache = null;
     }
 
     /**
@@ -186,6 +307,37 @@ final class SettingService
     public static function flushCache(): void
     {
         self::$cache = null;
+        self::$mailCache = null;
+    }
+
+    /**
+     * Stored mail_* settings keyed without the prefix (only keys that have a value row).
+     *
+     * @return array<string, string|null>
+     */
+    private function storedMail(): array
+    {
+        if (self::$mailCache === null) {
+            self::$mailCache = [];
+            foreach ($this->settings->pairs() as $key => $value) {
+                if (str_starts_with((string) $key, 'mail_') && in_array(substr((string) $key, 5), self::MAIL_KEYS, true)) {
+                    self::$mailCache[substr((string) $key, 5)] = $value;
+                }
+            }
+        }
+
+        return self::$mailCache;
+    }
+
+    private function decryptMailPassword(string $payload): ?string
+    {
+        try {
+            return Encrypter::fromConfig()->decrypt($payload);
+        } catch (\RuntimeException $e) {
+            Logger::error('Saved SMTP password could not be decrypted.', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**

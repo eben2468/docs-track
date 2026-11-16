@@ -33,6 +33,16 @@ final class Config
     }
 
     /**
+     * Every loaded value (tests save and restore it around Config::set()).
+     *
+     * @return array<string, mixed>
+     */
+    public static function all(): array
+    {
+        return self::$items;
+    }
+
+    /**
      * Get a value by dot-notation key, or $default when it is not defined.
      */
     public static function get(string $key, mixed $default = null): mixed

@@ -132,6 +132,8 @@ return static function (Router $router): void {
 
                 $router->get('/settings', [SettingController::class, 'edit']);
                 $router->post('/settings', [SettingController::class, 'update']);
+                $router->post('/settings/mail', [SettingController::class, 'updateMail']);
+                $router->post('/settings/mail/reset', [SettingController::class, 'resetMail']);
                 $router->post('/settings/test-email', [SettingController::class, 'testEmail']);
 
                 $router->get('/audit-logs', [AuditLogController::class, 'index']);
